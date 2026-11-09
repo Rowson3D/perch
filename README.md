@@ -138,6 +138,10 @@ Settings are stored in `%APPDATA%\Perch\config.json`, and site history in `%APPD
 
 Use **Settings → Apps → Installed apps → Perch → Uninstall**, or run `Perch.exe --uninstall`. It asks whether to keep your saved machines.
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md). Each version's section is also published as its GitHub release notes, with SHA-256 checksums of the downloads.
+
 ## Roadmap
 
 - **More cards:** This PC (CPU, RAM, disk, network), GitHub (builds and pull requests), Docker.
@@ -175,7 +179,13 @@ pip install -e ".[dev]"
 python -m perch
 ```
 
-The code follows ruff's lint and format rules (`ruff check .`, `ruff format .`). Pushing a tag like `v0.2.0` makes GitHub Actions build both executables and attach them to a release.
+The code follows ruff's lint and format rules (`ruff check .`, `ruff format .`). To release a new version:
+
+1. Bump `__version__` in `perch/__init__.py`.
+2. Add a section for it to `CHANGELOG.md`.
+3. Push a tag like `v0.2.1`.
+
+GitHub Actions then builds both executables and publishes the release, using that changelog section as its notes. The build fails if the changelog section is missing.
 
 ## License
 

@@ -47,8 +47,30 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >
-          gh release create $env:GITHUB_REF_NAME
-          dist/Perch.exe dist/perch-agent.exe
-          agent/perch_agent.py agent/install_agent_linux.sh agent/install_agent_windows.ps1
-          --title "Perch $env:GITHUB_REF_NAME" --generate-notes
+        run: |
+          python scripts/release_notes.py $env:GITHUB_REF_NAME > notes.md  # fails if CHANGELOG.md lacks this version
+          gh release create $env:GITHUB_REF_NAME `
+            dist/Perch.exe dist/perch-agent.exe `
+            agent/perch_agent.py agent/install_agent_linux.sh agent/install_agent_windows.ps1 `
+            --title "Perch $env:GITHUB_REF_NAME" --notes-file notes.md
+
+  # Keeps every published release's notes in step with CHANGELOG.md and adds SHA-256 checksums.
+  release-notes:
+    needs: windows
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Sync release notes from CHANGELOG.md
+        run: |
+          for v in $(python3 scripts/release_notes.py --versions); do
+            gh release view "v$v" > /dev/null 2>&1 || continue
+            rm -rf assets && mkdir assets
+            gh release download "v$v" --dir assets
+            python3 scripts/release_notes.py "$v" --assets assets > notes.md
+            gh release edit "v$v" --notes-file notes.md
+            echo "Updated notes for v$v"
+          done
