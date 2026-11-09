@@ -37,7 +37,7 @@ def render(size=256, colors=("free", "busy", "free"), margin=0.20):
 
 
 def card_icon(card_type, size=48):
-    """Icon for a card type, used in the perch window and the hatch gallery."""
+    """Icon for a card type, used in the card list and the "Add a card" window."""
     if card_type == "gpus":
         return render(size)
     img, d, s = _canvas(size)

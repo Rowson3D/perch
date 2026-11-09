@@ -59,16 +59,16 @@ class Tracker:
 
         if not (vram_busy or util_busy):
             state = FREE
-            self.reason = f"VRAM {mem:.0f}% is under the {thr:.0f}% threshold"
+            self.reason = f"VRAM is at {mem:.0f}%, under the {thr:.0f}% threshold"
         elif vram_busy and not util_busy and cfg.get("detect_held") and self._idle_for(cfg, now):
             state = HELD
             self.reason = (
-                f"VRAM {mem:.0f}% is held, but the GPU has been idle for {int(cfg.get('held_minutes', 10))}+ min"
+                f"VRAM is at {mem:.0f}% but the GPU has been idle for {int(cfg.get('held_minutes', 10))}+ minutes"
             )
         else:
             state = BUSY
             if vram_busy:
-                self.reason = f"VRAM {mem:.0f}% is at/over the {thr:.0f}% threshold"
+                self.reason = f"VRAM is at {mem:.0f}%, over the {thr:.0f}% threshold"
             else:
                 self.reason = f"utilization averaged {avg:.0f}% over the last {int(cfg.get('util_window', 60))} s"
         self.state = state

@@ -85,15 +85,21 @@ def ago(seconds):
     return f"{s // 86400}d"
 
 
+BREAKAWAY = 0x01000000 if IS_WIN else 0  # CREATE_BREAKAWAY_FROM_JOB
+
+
 def launch_detached(args):
-    subprocess.Popen(
-        args,
-        creationflags=DETACHED | NEW_GROUP,
-        close_fds=True,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    """Start a process that outlives us - and, where Windows allows it, whatever launched us.
+
+    Terminals, IDEs and some launchers run their children inside a job object that closes everything when
+    they exit. Breaking away from it keeps a freshly installed Perch running after the installer's parent quits.
+    """
+    kwargs = {"close_fds": True, "stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL,
+              "stderr": subprocess.DEVNULL}  # fmt: skip
+    try:
+        subprocess.Popen(args, creationflags=DETACHED | NEW_GROUP | BREAKAWAY, **kwargs)
+    except OSError:  # the job doesn't allow breaking away
+        subprocess.Popen(args, creationflags=DETACHED | NEW_GROUP, **kwargs)
 
 
 def clip(s, n):

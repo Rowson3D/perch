@@ -15,7 +15,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from perch import theme as T
-from perch.components import Dialog, PopupMenu, fly_away, hatch_in, icon_button, int_of, section
+from perch.components import Dialog, PopupMenu, fade_in, fade_out, icon_button, int_of, section
 from perch.util import point_on_a_monitor, work_area
 
 SNAP = 14  # px within which a dragged card snaps to an edge
@@ -29,7 +29,7 @@ class Card:
     DEFAULTS: dict = {}
     ADD_LABEL = None
 
-    def __init__(self, app, conf, hatch=False):
+    def __init__(self, app, conf, animate=False):
         self.app, self.conf = app, conf
         s = conf.setdefault("settings", {})
         for k, v in self.DEFAULTS.items():
@@ -71,7 +71,7 @@ class Card:
         w.bind("<Button-3>", self.show_menu)
 
         self.render()
-        self._place(hatch)
+        self._place(animate)
         self.start()
 
     # ------------------------------------------------------------ identity
@@ -132,7 +132,7 @@ class Card:
             self.win.after_cancel(job)
 
     # ------------------------------------------------------------ window placement
-    def _place(self, hatch):
+    def _place(self, animate):
         self.win.update_idletasks()
         w, h = self.win.winfo_reqwidth(), self.win.winfo_reqheight()
         x, y = self.conf.get("x"), self.conf.get("y")
@@ -142,8 +142,8 @@ class Card:
         if not self.visible:
             self.win.geometry(f"+{int(x)}+{int(y)}")
             return
-        if hatch:
-            hatch_in(self.win, int(x), int(y), float(self.conf.get("opacity", 0.94)))
+        if animate:
+            fade_in(self.win, int(x), int(y), float(self.conf.get("opacity", 0.94)))
         else:
             self.win.geometry(f"+{int(x)}+{int(y)}")
             self.win.deiconify()
@@ -227,7 +227,7 @@ class Card:
                 done()
 
         if animate and self.win.state() != "withdrawn":
-            fly_away(self.win, finish)
+            fade_out(self.win, finish)
         else:
             finish()
 
@@ -248,8 +248,8 @@ class Card:
         m.check("Always on top", self.conf.get("topmost", True), lambda: self.set_topmost(not self.conf["topmost"]))
         m.command("Hide this card", self.hide)
         m.separator()
-        m.command("Your perch…", self.app.open_perch)
-        m.command("Hatch a new card…", self.app.open_gallery)
+        m.command("All cards…", self.app.open_cards)
+        m.command("Add a card…", self.app.open_add_card)
         m.separator()
         m.command("Quit Perch", self.app.quit)
 

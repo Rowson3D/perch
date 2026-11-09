@@ -56,7 +56,7 @@ def flat(points):
 class GpuCard(Card):
     TYPE = "gpus"
     NAME = "GPUs"
-    DESCRIPTION = "Which GPUs on your machines are free, in use or held - and who's using them."
+    DESCRIPTION = "Shows which GPUs on your machines are free, in use or held, and who is using them."
     ADD_LABEL = "Add machine"
     DEFAULTS = {
         **DETECTION_DEFAULTS,
@@ -67,11 +67,11 @@ class GpuCard(Card):
         "watch": [],
     }
 
-    def __init__(self, app, conf, hatch=False):
+    def __init__(self, app, conf, animate=False):
         self.results, self.trackers, self.states = {}, {}, {}
         self.inflight, self.rows, self.host_status = set(), {}, {}
         self.poll_job = None
-        super().__init__(app, conf, hatch)
+        super().__init__(app, conf, animate)
 
     # ------------------------------------------------------------ data
     @property
@@ -526,7 +526,7 @@ class GpuCard(Card):
         spin(r, v["held_min"], 1, 240).pack(side="left", padx=(6, 4))
         ttk.Label(r, text="min").pack(side="left")
         ttk.Label(
-            f, text="A small dead zone keeps GPUs from flickering between states near a threshold.", style="Hint.TLabel"
+            f, text="A small buffer stops GPUs from switching back and forth near a threshold.", style="Hint.TLabel"
         ).grid(row=row + 5, column=0, columnspan=3, sticky="w", pady=(4, 0))
 
         section(f, row + 6, "Display")

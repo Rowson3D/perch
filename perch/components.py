@@ -7,7 +7,7 @@
 - ListManager  the standard "list of things + Add/Edit/Remove/Move" window
 - HoverCard    the floating details card shown when hovering a row
 - Toast        fallback notification when the tray is unavailable
-- icon_button, form_row, spin, fade/glide animations
+- icon_button, form_row, spin, fade_in / fade_out
 """
 
 import tkinter as tk
@@ -78,31 +78,18 @@ def animate(win, ms, step, done=None, frames=14):
     tick()
 
 
-def hatch_in(win, x, y, alpha):
-    """New card: drop in from slightly above while fading in."""
+def fade_in(win, x, y, alpha):
+    """Show a new card by fading it in."""
     win.attributes("-alpha", 0.0)
-    win.geometry(f"+{x}+{y - 24}")
+    win.geometry(f"+{x}+{y}")
     win.deiconify()
-
-    def step(t):
-        e = ease_out(t)
-        win.geometry(f"+{x}+{int(y - 24 * (1 - e))}")
-        win.attributes("-alpha", alpha * e)
-
-    animate(win, 260, step)
+    animate(win, 220, lambda t: win.attributes("-alpha", alpha * ease_out(t)))
 
 
-def fly_away(win, done):
-    """Removed card: drift up and away while fading out."""
-    x0, y0 = win.winfo_x(), win.winfo_y()
+def fade_out(win, done):
+    """Hide a removed card by fading it out."""
     a0 = float(win.attributes("-alpha"))
-
-    def step(t):
-        e = t * t
-        win.geometry(f"+{int(x0 + 60 * e)}+{int(y0 - 140 * e)}")
-        win.attributes("-alpha", max(0.0, a0 * (1 - t)))
-
-    animate(win, 420, step, done, frames=18)
+    animate(win, 220, lambda t: win.attributes("-alpha", max(0.0, a0 * (1 - t))), done)
 
 
 BUTTON_STYLES = {"primary": "Accent.TButton", "secondary": "TButton", "danger": "Danger.TButton"}

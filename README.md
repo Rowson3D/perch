@@ -34,9 +34,9 @@ Hover over a GPU to see which processes and users are on it. Right-click a busy 
 
 ## Adding and removing cards
 
-Open **Your perch** from the tray icon or from a card's **⋯** menu. It lists every card with its current status. From there you can open a card's settings, hide or show it, or remove it ("fly away").
+Open **All cards** from the tray icon or from a card's **⋯** menu. It lists every card with its current status. From there you can open a card's settings, hide or show it, or remove it.
 
-To add a card, click **Hatch a new card**, pick a type, give it a name and click **Hatch**. For a Sites card you can paste your addresses right there, one per line. You can have as many cards as you want, for example one for client sites and one for your own.
+To add a card, click **Add a card**, pick a type, give it a name and click **Add card**. For a Sites card you can paste your addresses right there, one per line. You can have as many cards as you want, for example one for client sites and one for your own.
 
 The tray icon is green when everything is fine, amber when something needs attention soon (like a certificate about to expire, or every GPU being busy), and red when something is down. Hover over it for a summary.
 

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "perch"
 dynamic = ["version"]
-description = "Discreet, customizable desktop cards for your machines and websites."
+description = "Small desktop cards for Windows that show whether your GPUs are free and your websites are up."
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Rowson3D" }]

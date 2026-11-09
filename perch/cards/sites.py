@@ -1,4 +1,4 @@
-"""Sites card: your websites at a glance - up or down, how fast, and when their SSL and domain expire."""
+"""Sites card: whether your websites are up, how fast they respond, and when their SSL and domain expire."""
 
 import datetime as dt
 import time
@@ -40,7 +40,9 @@ def descendants(w):
 class SitesCard(Card):
     TYPE = "sites"
     NAME = "Sites"
-    DESCRIPTION = "Your websites at a glance: up or down, how fast, and when their SSL and domain expire."
+    DESCRIPTION = (
+        "Checks your websites: whether they're up, how fast they respond, and when their SSL and domain expire."
+    )
     ADD_LABEL = "Add site"
     DEFAULTS = {
         "sites": [],
@@ -53,11 +55,11 @@ class SitesCard(Card):
         "compact": False,
     }
 
-    def __init__(self, app, conf, hatch=False):
+    def __init__(self, app, conf, animate=False):
         saved = C.load_state(conf["id"])
         self.monitors = {s["id"]: S.SiteMonitor(saved.get(s["id"])) for s in conf.get("settings", {}).get("sites", [])}
         self.inflight, self.last_check, self.rows = set(), {}, {}
-        super().__init__(app, conf, hatch)
+        super().__init__(app, conf, animate)
 
     # ------------------------------------------------------------ data
     @property
@@ -563,7 +565,7 @@ class SiteDialog(Dialog):
             card.app.root,
             "Edit site" if site else "Add site",
             heading="Edit site" if site else "Add a site",
-            subtitle="Perch checks it from this PC, and warns you before its certificate or domain lapses.",
+            subtitle="Perch checks this site from your PC and warns you before its certificate or domain expires.",
         )
         self.card, self.site = card, site
         s = site or {}

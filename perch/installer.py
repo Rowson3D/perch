@@ -264,7 +264,7 @@ def run_setup_dialog():
     ttk.Label(titles, text=f"Version {__version__}", style="Muted.TLabel").pack(anchor="w")
     ttk.Label(
         f,
-        text="Discreet desktop cards that keep watch for you: which GPUs are free, and whether your websites are up.",
+        text="Small cards on your desktop that show whether your GPUs are free and your websites are up.",
         wraplength=380,
         justify="left",
     ).pack(anchor="w", pady=(T.SECTION, T.GAP))

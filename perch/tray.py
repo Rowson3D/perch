@@ -21,8 +21,8 @@ class Tray:
         menu = pystray.Menu(
             Item("Show / hide cards", lambda: call(app.toggle_all), default=True),
             SEP,
-            Item("Your perch…", lambda: call(app.open_perch)),
-            Item("Hatch a card…", lambda: call(app.open_gallery)),
+            Item("All cards…", lambda: call(app.open_cards)),
+            Item("Add a card…", lambda: call(app.open_add_card)),
             Item("Refresh all", lambda: call(app.refresh_all)),
             SEP,
             Item(

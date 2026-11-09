@@ -42,7 +42,7 @@ Colors, fonts, spacing and sizes live only in `theme.py`. **Never hard-code a co
 | Details on hover | `app.tip.show(key, card_win, row, build)` (a `HoverCard`) | a custom tooltip |
 | Form rows and sections | `form_row`, `section`, `spin`, `int_of` | ad-hoc grids |
 | Card header buttons | `icon_button(parent, "+", command)` | plain labels with clicks |
-| Motion | `hatch_in` (a new card drops in) and `fly_away` (a removed card drifts off) | instant pop-in or removal |
+| Motion | `fade_in` for a new card and `fade_out` for a removed one | instant pop-in or removal |
 
 ## Cards: `perch/cards/base.py`
 
@@ -50,7 +50,7 @@ Every card subclasses `Card`, which provides the parts all cards share:
 
 - the borderless window, with the header: title, summary, then **+** **⋯** **–**;
 - dragging, and snapping to screen edges and other cards;
-- the right-click menu, which ends with the shared items (Card settings, Always on top, Hide, Your perch, Hatch, Quit);
+- the right-click menu, which ends with the shared items (Card settings, Always on top, Hide, All cards, Add a card, Quit);
 - the settings window, with the card's own sections first and the shared **CARD** section last (title, always on top, opacity).
 
 A card type only describes its rows, its data and its own settings.
@@ -63,6 +63,6 @@ A card type only describes its rows, its data and its own settings.
 - **Section titles** use the `Section` style in UPPERCASE, with `SECTION` spacing above.
 - **Status is shown as dot + word + color** (FREE, IN USE, HELD, UP, DOWN), never by color alone.
 - **Card rows** sit on `ROW` with this structure: dot · name · badge · value on the first line; then an optional graph on `HIST_BG`; then a muted detail line.
-- **Tiles** (Your perch, the hatch gallery) are `Card.TFrame` in a uniform two-column grid. The "add" tile is a dashed outline that lights up in `ACCENT` on hover.
+- **Tiles** (the card list and the "Add a card" window) are `Card.TFrame` in a uniform two-column grid. The "add" tile is a dashed outline that lights up in `ACCENT` on hover.
 - **Floating layers** (tooltips, menus, toasts) use `TIP_BG` with a 1px `TIP_BORDER` frame.
-- **Words:** cards are **hatched** and **fly away**. Everything else uses plain verbs: Add, Edit, Remove, Settings.
+- **Words:** use plain verbs everywhere: Add, Edit, Remove, Hide, Show, Settings. No themed or cute wording.

@@ -40,7 +40,7 @@ class App:
             self._spawn(conf)
         r.after(150, self.drain)
         if not self.cards:
-            r.after(500, self.open_perch)  # first run: show the empty perch with its hatch tile
+            r.after(500, self.open_cards)  # first run: show the empty card list with its "Add a card" tile
         elif first_run:
             r.after(
                 2500,
@@ -51,18 +51,18 @@ class App:
         self.cards_changed(structure=True)
 
     # ------------------------------------------------------------ cards
-    def _spawn(self, conf, hatch=False):
+    def _spawn(self, conf, animate=False):
         cls = CARD_TYPES.get(conf.get("type"))
         if cls is None:
             return None  # a card type from a newer version: leave its config untouched
-        card = cls(self, conf, hatch=hatch)
+        card = cls(self, conf, animate=animate)
         self.cards[card.id] = card
         return card
 
-    def hatch(self, card_type, title, settings=None):
+    def add_card(self, card_type, title, settings=None):
         conf = C.new_card(card_type, title, settings)
         self.cfg["cards"].append(conf)
-        card = self._spawn(conf, hatch=True)
+        card = self._spawn(conf, animate=True)
         self.save()
         self.cards_changed(structure=True)
         return card
@@ -131,7 +131,7 @@ class App:
             if text:
                 texts.append(text)
         self.tray.update(worst, f"{APP_NAME} - " + " · ".join(texts) if texts else APP_NAME)
-        home = self.dialogs.get("perch")
+        home = self.dialogs.get("cards")
         if home and home.win.winfo_exists():
             home.rebuild() if structure else home.refresh_status()
 
@@ -148,15 +148,15 @@ class App:
         d = self.dialogs[key] = factory()
         return d
 
-    def open_perch(self):
-        from perch.home import PerchWindow
+    def open_cards(self):
+        from perch.home import CardsWindow
 
-        self.open_dialog("perch", lambda: PerchWindow(self))
+        self.open_dialog("cards", lambda: CardsWindow(self))
 
-    def open_gallery(self):
-        from perch.home import Gallery
+    def open_add_card(self):
+        from perch.home import AddCardDialog
 
-        self.open_dialog("gallery", lambda: Gallery(self), replace=True)
+        self.open_dialog("add", lambda: AddCardDialog(self), replace=True)
 
     # ------------------------------------------------------------ plumbing
     def call_soon(self, fn, *args):

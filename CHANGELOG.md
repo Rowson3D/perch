@@ -2,6 +2,21 @@
 
 Changes to Perch, newest first. Versions follow [Semantic Versioning](https://semver.org/). Each section here is also used as the notes for that version's GitHub release.
 
+## [0.2.1] - 2026-11-09
+
+### Changed
+
+- Plainer wording in the app: the setup window, the card list, card descriptions and a few settings hints.
+- Dropped the bird theme. "Your perch" is now **All cards**, "Hatch" is **Add a card**, and "Fly away" is **Remove**. Cards now fade in and out instead of dropping in and drifting off.
+
+### Fixed
+
+- After installing, Perch could close when the program that ran the installer closed (for example a terminal). It now runs on its own.
+
+### Install
+
+Download `Perch.exe` below and run it. If you already have Perch, click **Update**. Your cards and settings stay as they are.
+
 ## [0.2.0] - 2026-11-09
 
 First public release. Perch puts small cards on your Windows desktop that show whether your GPUs are free and whether your websites are up.
