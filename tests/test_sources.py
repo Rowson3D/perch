@@ -19,8 +19,18 @@ class ParseTests(unittest.TestCase):
     def test_gpus(self):
         g = parse_gpus(GPUS)
         self.assertEqual(len(g), 2)
-        self.assertEqual(g[0], {"index": 0, "uuid": "GPU-aaa", "name": "NVIDIA GeForce RTX 4090",
-                                "mem_used": 18000.0, "mem_total": 24564.0, "util": 97.0, "temp": 71.0})
+        self.assertEqual(
+            g[0],
+            {
+                "index": 0,
+                "uuid": "GPU-aaa",
+                "name": "NVIDIA GeForce RTX 4090",
+                "mem_used": 18000.0,
+                "mem_total": 24564.0,
+                "util": 97.0,
+                "temp": 71.0,
+            },
+        )
         self.assertIsNone(g[1]["mem_used"])
         self.assertIsNone(g[1]["util"])
 

@@ -1,12 +1,13 @@
 """Small Windows/OS helpers shared across the app."""
+
 import ctypes
 import os
 import subprocess
 
 IS_WIN = os.name == "nt"
-NO_WINDOW = 0x08000000 if IS_WIN else 0          # CREATE_NO_WINDOW
-NEW_GROUP = 0x00000200 if IS_WIN else 0          # CREATE_NEW_PROCESS_GROUP
-DETACHED = 0x00000008 if IS_WIN else 0           # DETACHED_PROCESS
+NO_WINDOW = 0x08000000 if IS_WIN else 0  # CREATE_NO_WINDOW
+NEW_GROUP = 0x00000200 if IS_WIN else 0  # CREATE_NEW_PROCESS_GROUP
+DETACHED = 0x00000008 if IS_WIN else 0  # DETACHED_PROCESS
 
 _mutex = None
 
@@ -35,14 +36,21 @@ def point_on_a_monitor(x, y):
         return True
     try:
         from ctypes import wintypes
+
         return bool(ctypes.windll.user32.MonitorFromPoint(wintypes.POINT(int(x), int(y)), 0))
     except Exception:
         return True
 
 
 def launch_detached(args):
-    subprocess.Popen(args, creationflags=DETACHED | NEW_GROUP, close_fds=True,
-                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.Popen(
+        args,
+        creationflags=DETACHED | NEW_GROUP,
+        close_fds=True,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
 
 def clip(s, n):

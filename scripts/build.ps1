@@ -1,4 +1,4 @@
-# Builds dist\GpuWatch.exe (widget + its own installer) and dist\gpu-agent.exe.
+﻿# Builds dist\GpuWatch.exe (widget + its own installer) and dist\gpu-agent.exe.
 #   powershell -ExecutionPolicy Bypass -File scripts\build.ps1
 param([string]$Python = "python")
 $ErrorActionPreference = 'Stop'
@@ -9,7 +9,9 @@ function Run { & $args[0] @($args | Select-Object -Skip 1); if ($LASTEXITCODE) {
 
 if (-not (Test-Path .venv)) { Run $Python -m venv .venv }
 $py = Join-Path $root '.venv\Scripts\python.exe'
-Run $py -m pip install -q -r requirements.txt -r requirements-build.txt
+Run $py -m pip install -q -e ".[build,dev]"
+Run $py -m ruff check .
+Run $py -m ruff format --check .
 Run $py -m unittest discover -s tests
 Run $py scripts\make_assets.py
 

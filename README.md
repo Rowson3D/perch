@@ -103,14 +103,20 @@ Requires Windows and Python 3.10+.
 powershell -ExecutionPolicy Bypass -File scripts\build.ps1
 ```
 
-The script creates `.venv`, installs dependencies, runs the tests, and builds `dist\GpuWatch.exe` and `dist\gpu-agent.exe` with PyInstaller.
+The script:
+
+1. creates `.venv` and installs the project with its build and dev extras;
+2. lints with ruff and runs the tests;
+3. builds `dist\GpuWatch.exe` and `dist\gpu-agent.exe` with PyInstaller.
 
 To run from source without building:
 
 ```powershell
-pip install -r requirements.txt
+pip install -e ".[dev]"
 python -m gpuwatch
 ```
+
+The code follows ruff's lint and format rules (`ruff check .`, `ruff format .`). The UI follows the [design system](docs/design-system.md): one set of colors, type and spacing tokens, plus shared dialog and menu components, so every window looks the same.
 
 Pushing a tag like `v1.0.1` makes GitHub Actions build both executables and attach them to a release.
 

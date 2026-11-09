@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gpu-watch"
+dynamic = ["version"]
+description = "A discreet desktop widget showing which GPUs on your machines are free, in use or held."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Rowson3D" }]
+requires-python = ">=3.10"
+dependencies = ["pystray>=0.19", "Pillow>=10", "psutil>=5.9"]
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.10"]
+dev = ["ruff>=0.6"]
+
+[project.gui-scripts]
+gpu-watch = "gpuwatch.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/Rowson3D/gpu-watch"
+
+[tool.setuptools]
+packages = ["gpuwatch"]
+
+[tool.setuptools.dynamic]
+version = { attr = "gpuwatch.__version__" }
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+ignore = [
+  "B023",   # Tk callbacks intentionally bind loop variables via default args
+  "SIM105", # explicit try/except/pass reads clearer in UI code
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gpuwatch"]

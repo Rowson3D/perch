@@ -4,6 +4,7 @@ Every fetch returns {"host": str|None, "gpus": [...], "procs": [...]} where
   gpu  = {index, uuid, name, mem_used, mem_total (MiB), util (%), temp (C)}
   proc = {gpu_uuid, pid, name, mem (MiB), user}
 """
+
 import csv
 import io
 import json
@@ -50,9 +51,17 @@ def parse_gpus(text):
     for row in _rows(text):
         if len(row) < 7 or not row[0].isdigit():
             continue
-        gpus.append({"index": int(row[0]), "uuid": row[1], "name": row[2],
-                     "mem_used": _num(row[3]), "mem_total": _num(row[4]),
-                     "util": _num(row[5]), "temp": _num(row[6])})
+        gpus.append(
+            {
+                "index": int(row[0]),
+                "uuid": row[1],
+                "name": row[2],
+                "mem_used": _num(row[3]),
+                "mem_total": _num(row[4]),
+                "util": _num(row[5]),
+                "temp": _num(row[6]),
+            }
+        )
     return gpus
 
 
@@ -62,8 +71,7 @@ def parse_procs(text):
         if len(row) < 4 or not row[1].isdigit():
             continue
         name = os.path.basename(row[2].replace("\\", "/")) or row[2]
-        procs.append({"gpu_uuid": row[0], "pid": int(row[1]), "name": name,
-                      "mem": _num(row[3]), "user": None})
+        procs.append({"gpu_uuid": row[0], "pid": int(row[1]), "name": name, "mem": _num(row[3]), "user": None})
     return procs
 
 
@@ -92,8 +100,9 @@ def local_users(pids):
 
 
 def _run(cmd, timeout):
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
-                       stdin=subprocess.DEVNULL, creationflags=NO_WINDOW)
+    r = subprocess.run(
+        cmd, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL, creationflags=NO_WINDOW
+    )
     if r.returncode != 0:
         lines = (r.stderr or r.stdout or "").strip().splitlines()
         raise CommandError(lines[-1] if lines else f"exit code {r.returncode}", r.returncode)
@@ -114,11 +123,23 @@ def fetch_local():
 
 def fetch_ssh(addr, user="", port=None):
     target = f"{user}@{addr}" if user else addr
-    base = ["ssh", "-o", "BatchMode=yes", "-o", f"ConnectTimeout={TIMEOUT}",
-            "-o", "StrictHostKeyChecking=accept-new", "-p", str(port or SSH_PORT), target]
+    base = [
+        "ssh",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        f"ConnectTimeout={TIMEOUT}",
+        "-o",
+        "StrictHostKeyChecking=accept-new",
+        "-p",
+        str(port or SSH_PORT),
+        target,
+    ]
     gpu_cmd = f"nvidia-smi --query-gpu={GPU_QUERY} {FMT}"
-    full = (f"{gpu_cmd}; echo {SEP}; nvidia-smi --query-compute-apps={PROC_QUERY} {FMT}; "
-            f"echo {SEP}; ps -eo pid=,user:32= 2>/dev/null")
+    full = (
+        f"{gpu_cmd}; echo {SEP}; nvidia-smi --query-compute-apps={PROC_QUERY} {FMT}; "
+        f"echo {SEP}; ps -eo pid=,user:32= 2>/dev/null"
+    )
     try:
         parts = _run(base + [full], TIMEOUT + 10).split(SEP)
     except CommandError as e:
@@ -149,7 +170,7 @@ def fetch_agent(addr, port=None):
         if isinstance(reason, ConnectionRefusedError) or "refused" in str(reason).lower():
             raise RuntimeError("connection refused - is the agent running?") from None
         raise RuntimeError(str(reason)) from None
-    except (TimeoutError, socket.timeout):
+    except TimeoutError:
         raise RuntimeError("timed out") from None
     return {"host": data.get("host"), "gpus": data.get("gpus") or [], "procs": data.get("procs") or []}
 

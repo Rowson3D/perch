@@ -1,10 +1,11 @@
 """Deciding whether a GPU is FREE, IN USE or HELD from its recent samples."""
+
 import time
 from collections import deque
 
 FREE, BUSY, HELD, UNKNOWN = "free", "busy", "held", "unknown"
-HYSTERESIS = 5.0        # percentage points a busy GPU must drop below a threshold to flip back
-IDLE_UTIL = 5.0         # utilization at or below this counts as "doing nothing"
+HYSTERESIS = 5.0  # percentage points a busy GPU must drop below a threshold to flip back
+IDLE_UTIL = 5.0  # utilization at or below this counts as "doing nothing"
 KEEP_SECONDS = 4 * 3600
 
 
@@ -12,7 +13,7 @@ class Tracker:
     """Rolling history for one GPU plus its current state."""
 
     def __init__(self):
-        self.samples = deque()      # (time, vram %, util % or None)
+        self.samples = deque()  # (time, vram %, util % or None)
         self.state = UNKNOWN
         self.reason = ""
 
@@ -52,15 +53,15 @@ class Tracker:
             self.reason = f"VRAM {mem:.0f}% is under the {thr:.0f}% threshold"
         elif vram_busy and not util_busy and cfg.get("detect_held") and self._idle_for(cfg, now):
             state = HELD
-            self.reason = (f"VRAM {mem:.0f}% is held, but the GPU has been idle for "
-                           f"{int(cfg.get('held_minutes', 10))}+ min")
+            self.reason = (
+                f"VRAM {mem:.0f}% is held, but the GPU has been idle for {int(cfg.get('held_minutes', 10))}+ min"
+            )
         else:
             state = BUSY
             if vram_busy:
                 self.reason = f"VRAM {mem:.0f}% is at/over the {thr:.0f}% threshold"
             else:
-                self.reason = (f"utilization averaged {avg:.0f}% over the last "
-                               f"{int(cfg.get('util_window', 60))} s")
+                self.reason = f"utilization averaged {avg:.0f}% over the last {int(cfg.get('util_window', 60))} s"
         self.state = state
         return state
 

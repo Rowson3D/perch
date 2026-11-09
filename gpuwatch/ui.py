@@ -1,4 +1,5 @@
 """The desktop widget window."""
+
 import os
 import queue
 import threading
@@ -6,18 +7,50 @@ import time
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
 
-from gpuwatch import APP_NAME, icons
+from gpuwatch import APP_NAME, icons, style
 from gpuwatch import config as C
+from gpuwatch.components import PopupMenu
 from gpuwatch.sources import fetch, gkey
 from gpuwatch.status import BUSY, FREE, HELD, UNKNOWN, Tracker
-from gpuwatch.theme import (ACCENT, AMBER, AMBER_DIM, BAR_H, BAR_W, BG, BORDER, F, FB, FG, FS, FT,
-                            GREEN, GREEN_DIM, GREY, GREY_DIM, HIST_BG, HIST_H, MARK, MONO, MUTED,
-                            RED, RED_DIM, ROW, TIP_BG, TIP_BORDER, TRACK, UTIL_LINE)
+from gpuwatch.theme import (
+    ACCENT,
+    AMBER,
+    AMBER_DIM,
+    BAR_H,
+    BAR_W,
+    BG,
+    BORDER,
+    FB,
+    FG,
+    FS,
+    FT,
+    GREEN,
+    GREEN_DIM,
+    GREY,
+    GREY_DIM,
+    HIST_BG,
+    HIST_H,
+    MARK,
+    MONO,
+    MUTED,
+    RED,
+    RED_DIM,
+    ROW,
+    TIP_BG,
+    TIP_BORDER,
+    TRACK,
+    UTIL_LINE,
+    F,
+)
 from gpuwatch.tray import Tray
 from gpuwatch.util import clip, gb, point_on_a_monitor, short_name
 
-STYLE = {FREE: (GREEN, GREEN_DIM, "FREE"), BUSY: (RED, RED_DIM, "IN USE"),
-         HELD: (AMBER, AMBER_DIM, "HELD"), UNKNOWN: (GREY, GREY_DIM, "")}
+STYLE = {
+    FREE: (GREEN, GREEN_DIM, "FREE"),
+    BUSY: (RED, RED_DIM, "IN USE"),
+    HELD: (AMBER, AMBER_DIM, "HELD"),
+    UNKNOWN: (GREY, GREY_DIM, ""),
+}
 
 
 def descendants(w):
@@ -36,9 +69,9 @@ class App:
         self.cfg = C.load_config()
         self.q = queue.Queue()
         self.pool = ThreadPoolExecutor(max_workers=16)
-        self.results = {}       # host id -> {"ok", "data" | "error"}
-        self.trackers = {}      # (host id, gpu key) -> Tracker
-        self.states = {}        # (host id, gpu key) -> FREE/BUSY/HELD/UNKNOWN
+        self.results = {}  # host id -> {"ok", "data" | "error"}
+        self.trackers = {}  # (host id, gpu key) -> Tracker
+        self.states = {}  # (host id, gpu key) -> FREE/BUSY/HELD/UNKNOWN
         self.inflight, self.rows, self.host_status, self.dialogs = set(), {}, {}, {}
         self.poll_job, self._off = None, None
         self.autostart_on = C.autostart_enabled()
@@ -54,13 +87,13 @@ class App:
             r.iconphoto(True, self._icon)
         except Exception:
             pass
-        self.topmost_var = tk.BooleanVar(value=bool(self.cfg["topmost"]))
-        self.autostart_var = tk.BooleanVar(value=self.autostart_on)
+        style.apply(r)
 
         self.tray = Tray(self)
 
-        outer = tk.Frame(r, bg=BG, padx=10, pady=8, highlightthickness=1,
-                         highlightbackground=BORDER, highlightcolor=BORDER)
+        outer = tk.Frame(
+            r, bg=BG, padx=10, pady=8, highlightthickness=1, highlightbackground=BORDER, highlightcolor=BORDER
+        )
         outer.pack(fill="both", expand=True)
         hdr = tk.Frame(outer, bg=BG)
         hdr.pack(fill="x")
@@ -69,32 +102,16 @@ class App:
         self.summary.pack(side="left", padx=(8, 0), pady=(2, 0))
         if self.tray.available:
             self._hbtn(hdr, "–", lambda e: self.toggle_visible(), "Hide to tray")
-        self._hbtn(hdr, "⋯", lambda e: self.menu.tk_popup(e.x_root, e.y_root), "Menu")
+        self._hbtn(hdr, "⋯", self.show_menu, "Menu")
         self._hbtn(hdr, "+", lambda e: self.open_host_dialog(), "Add machine")
         self.body = tk.Frame(outer, bg=BG)
         self.body.pack(fill="both", expand=True, pady=(4, 0))
-
-        m = self.menu = tk.Menu(r, tearoff=0)
-        m.add_command(label="Add machine…", command=self.open_host_dialog)
-        m.add_command(label="Manage machines…", command=self.open_manage)
-        m.add_command(label="Settings…", command=self.open_settings)
-        m.add_command(label="Refresh now", command=self.refresh_now)
-        m.add_separator()
-        m.add_checkbutton(label="Always on top", variable=self.topmost_var,
-                          command=lambda: self.set_topmost(self.topmost_var.get()))
-        if os.name == "nt":
-            m.add_checkbutton(label="Start with Windows", variable=self.autostart_var,
-                              command=lambda: self.set_autostart(self.autostart_var.get()))
-        if self.tray.available:
-            m.add_command(label="Hide to tray", command=self.toggle_visible)
-        m.add_separator()
-        m.add_command(label=f"Quit {APP_NAME}", command=self.quit)
 
         # Bound on the root's bindtag, so these apply to every widget inside the widget window.
         r.bind("<ButtonPress-1>", self._press)
         r.bind("<B1-Motion>", self._drag)
         r.bind("<ButtonRelease-1>", self._release)
-        r.bind("<Button-3>", lambda e: self.menu.tk_popup(e.x_root, e.y_root))
+        r.bind("<Button-3>", self.show_menu)
 
         self.tip = Tip(self)
         self.render()
@@ -104,14 +121,16 @@ class App:
         r.after(150, self.drain)
         self.poll()
         if first_run:
-            r.after(2500, lambda: self.notify(
-                f"{APP_NAME} is running",
-                "Drag the widget anywhere. Right-click it, or the tray icon, for options."))
+            r.after(
+                2500,
+                lambda: self.notify(
+                    f"{APP_NAME} is running", "Drag the widget anywhere. Right-click it, or the tray icon, for options."
+                ),
+            )
 
     # ------------------------------------------------------------ window chrome
     def _hbtn(self, parent, text, cmd, tip):
-        b = tk.Label(parent, text=text, bg=BG, fg=MUTED, font=("Segoe UI Semibold", 11),
-                     cursor="hand2", padx=5)
+        b = tk.Label(parent, text=text, bg=BG, fg=MUTED, font=("Segoe UI Semibold", 11), cursor="hand2", padx=5)
         b.pack(side="right")
         b.bind("<Enter>", lambda e: b.config(fg=FG))
         b.bind("<Leave>", lambda e: b.config(fg=MUTED))
@@ -119,6 +138,7 @@ class App:
         def click(e):
             cmd(e)
             return "break"  # don't start a drag
+
         b.bind("<Button-1>", click)
 
     def _press(self, e):
@@ -150,13 +170,20 @@ class App:
             w.destroy()
         self.rows, self.host_status = {}, {}
         if not self.cfg["hosts"]:
-            tk.Label(self.body, text="No GPUs yet.\nClick  +  to add a machine.", bg=BG, fg=MUTED,
-                     font=F, justify="left", width=38, anchor="w").pack(anchor="w", pady=6)
+            tk.Label(
+                self.body,
+                text="No GPUs yet.\nClick  +  to add a machine.",
+                bg=BG,
+                fg=MUTED,
+                font=F,
+                justify="left",
+                width=38,
+                anchor="w",
+            ).pack(anchor="w", pady=6)
         for h in self.cfg["hosts"]:
             hf = tk.Frame(self.body, bg=BG)
             hf.pack(fill="x", pady=(6, 1))
-            tk.Label(hf, text=clip(h.get("name") or h.get("address"), 32), bg=BG, fg=FG,
-                     font=FB).pack(side="left")
+            tk.Label(hf, text=clip(h.get("name") or h.get("address"), 32), bg=BG, fg=FG, font=FB).pack(side="left")
             st = tk.Label(hf, text="connecting…", bg=BG, fg=MUTED, font=FS)
             st.pack(side="right")
             self.host_status[h["id"]] = st
@@ -174,8 +201,13 @@ class App:
         dot = tk.Canvas(top, width=10, height=10, bg=ROW, highlightthickness=0)
         dot_id = dot.create_oval(1, 1, 9, 9, fill=GREY, outline="")
         dot.pack(side="left", pady=(2, 0))
-        tk.Label(top, text=clip(f"GPU {info.get('index', '?')}  {short_name(info.get('name', ''))}", 26),
-                 bg=ROW, fg=FG, font=F).pack(side="left", padx=(6, 0))
+        tk.Label(
+            top,
+            text=clip(f"GPU {info.get('index', '?')}  {short_name(info.get('name', ''))}", 26),
+            bg=ROW,
+            fg=FG,
+            font=F,
+        ).pack(side="left", padx=(6, 0))
         pct = tk.Label(top, text="—", bg=ROW, fg=MUTED, font=FB)
         pct.pack(side="right")
         state = tk.Label(top, text="", bg=ROW, fg=MUTED, font=FS)
@@ -198,8 +230,19 @@ class App:
             w.bind("<Enter>", lambda e, key=key: self.tip.show(key), add="+")
             w.bind("<Leave>", lambda e: self.tip.hide_soon(), add="+")
             w.bind("<Button-3>", lambda e, key=key: self.row_menu(e, key))
-        return dict(card=card, dot=dot, dot_id=dot_id, pct=pct, state=state, bell=bell, bar=bar,
-                    fill=fill, mark=mark, hist=hist, detail=detail)
+        return dict(
+            card=card,
+            dot=dot,
+            dot_id=dot_id,
+            pct=pct,
+            state=state,
+            bell=bell,
+            bar=bar,
+            fill=fill,
+            mark=mark,
+            hist=hist,
+            detail=detail,
+        )
 
     def host(self, hid):
         return next((h for h in self.cfg["hosts"] if h["id"] == hid), None)
@@ -295,6 +338,7 @@ class App:
 
         def xy(t, v):
             return W * (1 - (now - t) / span), H - 1 - (H - 3) * min(max(v, 0), 100) / 100
+
         mem = [xy(t, m) for t, m, _ in pts]
         c.create_polygon(flat([(mem[0][0], H), *mem, (mem[-1][0], H)]), fill=dim, outline="")
         c.create_line(flat(mem), fill=color, width=1.5)
@@ -351,12 +395,14 @@ class App:
 
     def run_bg(self, fn, done):
         """Run fn() off the UI thread, then done((ok, value_or_error)) on the UI thread."""
+
         def job():
             try:
                 out = (True, fn())
             except Exception as e:  # noqa: BLE001
                 out = (False, str(e) or type(e).__name__)
             self.call_soon(done, out)
+
         threading.Thread(target=job, daemon=True).start()
 
     def drain(self):
@@ -392,32 +438,49 @@ class App:
             self.save()
             info = h.get("gpu_info", {}).get(key[1], {})
             name = short_name((g or {}).get("name") or info.get("name", "GPU"))
-            self.notify(f"GPU free: {name}",
-                        f"GPU {info.get('index', '?')} on {h.get('name') or h.get('address')} is free now.")
+            self.notify(
+                f"GPU free: {name}", f"GPU {info.get('index', '?')} on {h.get('name') or h.get('address')} is free now."
+            )
 
     def notify(self, title, message):
         if not self.tray.notify(title, message):
             Toast(self.root, title, message)
 
+    def _menu_common(self, m):
+        m.command("Add machine…", self.open_host_dialog)
+        m.command("Manage machines…", self.open_manage)
+        m.command("Settings…", self.open_settings)
+        m.command("Refresh now", self.refresh_now)
+        m.separator()
+        m.check("Always on top", self.cfg["topmost"], lambda: self.set_topmost(not self.cfg["topmost"]))
+        if os.name == "nt":
+            m.check("Start with Windows", self.autostart_on, lambda: self.set_autostart(not self.autostart_on))
+        if self.tray.available:
+            m.command("Hide to tray", self.toggle_visible)
+        m.separator()
+        m.command(f"Quit {APP_NAME}", self.quit)
+        return m
+
+    def show_menu(self, e):
+        self.tip.hide()
+        self._menu_common(PopupMenu(self.root)).popup(e.x_root, e.y_root)
+        return "break"
+
     def row_menu(self, e, key):
+        self.tip.hide()
         h = self.host(key[0])
-        m = tk.Menu(self.root, tearoff=0)
+        m = PopupMenu(self.root)
         state = self.states.get(key, UNKNOWN)
         if self.watch_key(key) in self.cfg["watch"]:
-            m.add_command(label="Cancel 'notify when free'", command=lambda: self.set_watch(key, False))
+            m.command("Cancel 'notify when free'", lambda: self.set_watch(key, False))
         elif state == FREE:
-            m.add_command(label="Notify me when free (it's free now)", state="disabled")
+            m.command("Notify me when free (it's free now)", None)
         else:
-            m.add_command(label="Notify me when free", command=lambda: self.set_watch(key, True))
-        m.add_separator()
+            m.command("Notify me when free", lambda: self.set_watch(key, True))
         if h:
-            m.add_command(label="Edit machine…", command=lambda: self.open_host_dialog(h))
-        m.add_command(label="Refresh now", command=self.refresh_now)
-        m.add_separator()
-        m.add_command(label="Add machine…", command=self.open_host_dialog)
-        m.add_command(label="Manage machines…", command=self.open_manage)
-        m.add_command(label="Settings…", command=self.open_settings)
-        m.tk_popup(e.x_root, e.y_root)
+            m.command("Edit this machine…", lambda: self.open_host_dialog(h))
+        m.separator()
+        self._menu_common(m).popup(e.x_root, e.y_root)
         return "break"
 
     # ------------------------------------------------------------ actions
@@ -474,6 +537,7 @@ class App:
 
     def open_host_dialog(self, host=None):
         from gpuwatch.dialogs import HostDialog
+
         d = self.dialogs.get("host")
         if d and d.win.winfo_exists():
             d.win.destroy()
@@ -481,10 +545,12 @@ class App:
 
     def open_manage(self):
         from gpuwatch.dialogs import ManageDialog
+
         self._dialog("manage", lambda: ManageDialog(self))
 
     def open_settings(self):
         from gpuwatch.dialogs import SettingsDialog
+
         self._dialog("settings", lambda: SettingsDialog(self))
 
     def toggle_visible(self):
@@ -501,7 +567,6 @@ class App:
 
     def set_topmost(self, on):
         self.cfg["topmost"] = bool(on)
-        self.topmost_var.set(self.cfg["topmost"])
         self.root.attributes("-topmost", self.cfg["topmost"])
         self.save()
 
@@ -511,7 +576,6 @@ class App:
         except OSError as e:
             self.notify(APP_NAME, f"Couldn't change the startup setting: {e}")
         self.autostart_on = C.autostart_enabled()
-        self.autostart_var.set(self.autostart_on)
 
     def quit(self):
         self.save()
@@ -563,8 +627,7 @@ class Tip:
         f.pack(padx=1, pady=1)
 
         def line(text, fg=FG, font=F, pady=0):
-            tk.Label(f, text=text, bg=TIP_BG, fg=fg, font=font, justify="left", anchor="w").pack(
-                anchor="w", pady=pady)
+            tk.Label(f, text=text, bg=TIP_BG, fg=fg, font=font, justify="left", anchor="w").pack(anchor="w", pady=pady)
 
         info = h.get("gpu_info", {}).get(key[1], {})
         g, procs = app.live(*key)
@@ -583,23 +646,30 @@ class Tip:
             stats = [f"VRAM   {gb(used)} / {gb(g['mem_total'])} GB  ({100 * used / g['mem_total']:.0f}%)"]
             if g.get("util") is not None:
                 avg = tr.util_avg(float(app.cfg.get("util_window", 60))) if tr else None
-                stats.append(f"Util   {g['util']:.0f}%" + (f"   (avg {avg:.0f}% over "
-                             f"{int(app.cfg.get('util_window', 60))} s)" if avg is not None else ""))
+                stats.append(
+                    f"Util   {g['util']:.0f}%"
+                    + (f"   (avg {avg:.0f}% over {int(app.cfg.get('util_window', 60))} s)" if avg is not None else "")
+                )
             if g.get("temp") is not None:
                 stats.append(f"Temp   {g['temp']:.0f}°C")
             line("\n".join(stats), FG, MONO, (6, 0))
             line("Processes", MUTED, FB, (8, 2))
             if procs:
-                rows = [f"{clip(p.get('user') or '?', 12):<12} {clip(p['name'], 22):<22} "
-                        f"{(gb(p['mem']) + ' GB') if p.get('mem') is not None else '':>8}"
-                        for p in sorted(procs, key=lambda p: -(p.get("mem") or 0))[:12]]
+                rows = [
+                    f"{clip(p.get('user') or '?', 12):<12} {clip(p['name'], 22):<22} "
+                    f"{(gb(p['mem']) + ' GB') if p.get('mem') is not None else '':>8}"
+                    for p in sorted(procs, key=lambda p: -(p.get("mem") or 0))[:12]
+                ]
                 if len(procs) > 12:
                     rows.append(f"… and {len(procs) - 12} more")
                 line("\n".join(rows), FG, MONO)
             else:
                 line("No compute processes reported", MUTED, FS)
-        hint = ("Right-click: cancel notification" if app.watch_key(key) in app.cfg["watch"]
-                else "Right-click: notify me when it's free")
+        hint = (
+            "Right-click: cancel notification"
+            if app.watch_key(key) in app.cfg["watch"]
+            else "Right-click: notify me when it's free"
+        )
         line(hint, GREY, FS, (8, 0))
 
         self.win.update_idletasks()

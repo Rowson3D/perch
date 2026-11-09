@@ -11,6 +11,7 @@ Python 3.7+.
 
     python3 gpu_agent.py [--port 9123] [--bind 0.0.0.0]
 """
+
 import argparse
 import csv
 import io
@@ -38,8 +39,11 @@ def find_smi():
     found = shutil.which("nvidia-smi")
     if found:
         return found
-    for candidate in ("/usr/bin/nvidia-smi", r"C:\Windows\System32\nvidia-smi.exe",
-                      r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe"):
+    for candidate in (
+        "/usr/bin/nvidia-smi",
+        r"C:\Windows\System32\nvidia-smi.exe",
+        r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe",
+    ):
         if os.path.exists(candidate):
             return candidate
     return "nvidia-smi"
@@ -61,8 +65,9 @@ def _rows(text):
 
 
 def _smi(query):
-    r = subprocess.run([SMI, query, FMT], capture_output=True, text=True, timeout=10,
-                       stdin=subprocess.DEVNULL, creationflags=NO_WINDOW)
+    r = subprocess.run(
+        [SMI, query, FMT], capture_output=True, text=True, timeout=10, stdin=subprocess.DEVNULL, creationflags=NO_WINDOW
+    )
     if r.returncode != 0:
         raise RuntimeError((r.stderr or r.stdout).strip() or "nvidia-smi failed")
     return r.stdout
@@ -71,6 +76,7 @@ def _smi(query):
 def user_of(pid):
     try:
         import psutil
+
         return psutil.Process(pid).username().split("\\")[-1]
     except ImportError:
         pass
@@ -78,6 +84,7 @@ def user_of(pid):
         return None
     try:
         import pwd
+
         with open(f"/proc/{pid}/status") as f:
             for line in f:
                 if line.startswith("Uid:"):
@@ -91,17 +98,31 @@ def collect():
     gpus = []
     for row in _rows(_smi("--query-gpu=" + GPU_QUERY)):
         if len(row) >= 7 and row[0].isdigit():
-            gpus.append({"index": int(row[0]), "uuid": row[1], "name": row[2],
-                         "mem_used": _num(row[3]), "mem_total": _num(row[4]),
-                         "util": _num(row[5]), "temp": _num(row[6])})
+            gpus.append(
+                {
+                    "index": int(row[0]),
+                    "uuid": row[1],
+                    "name": row[2],
+                    "mem_used": _num(row[3]),
+                    "mem_total": _num(row[4]),
+                    "util": _num(row[5]),
+                    "temp": _num(row[6]),
+                }
+            )
     procs = []
     try:
         for row in _rows(_smi("--query-compute-apps=" + PROC_QUERY)):
             if len(row) >= 4 and row[1].isdigit():
                 pid = int(row[1])
-                procs.append({"gpu_uuid": row[0], "pid": pid,
-                              "name": os.path.basename(row[2].replace("\\", "/")) or row[2],
-                              "mem": _num(row[3]), "user": user_of(pid)})
+                procs.append(
+                    {
+                        "gpu_uuid": row[0],
+                        "pid": pid,
+                        "name": os.path.basename(row[2].replace("\\", "/")) or row[2],
+                        "mem": _num(row[3]),
+                        "user": user_of(pid),
+                    }
+                )
     except Exception:
         pass
     return {"gpus": gpus, "procs": procs}

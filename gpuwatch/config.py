@@ -1,4 +1,5 @@
 """Settings file and the 'start with Windows' registry entry."""
+
 import copy
 import json
 import os
@@ -13,11 +14,11 @@ RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 DEFAULTS = {
     # detection
-    "threshold": 50,          # VRAM % at or above which a GPU counts as IN USE
-    "use_util": True,         # also IN USE when utilization averages >= util_threshold...
+    "threshold": 50,  # VRAM % at or above which a GPU counts as IN USE
+    "use_util": True,  # also IN USE when utilization averages >= util_threshold...
     "util_threshold": 40,
-    "util_window": 60,        # ...over this many seconds
-    "detect_held": True,      # VRAM held but GPU idle for held_minutes -> HELD
+    "util_window": 60,  # ...over this many seconds
+    "detect_held": True,  # VRAM held but GPU idle for held_minutes -> HELD
     "held_minutes": 10,
     # display
     "show_history": True,
@@ -30,7 +31,7 @@ DEFAULTS = {
     "y": None,
     # data
     "hosts": [],
-    "watch": [],              # "hostid|gpukey" entries waiting for a 'GPU is free' notification
+    "watch": [],  # "hostid|gpukey" entries waiting for a 'GPU is free' notification
 }
 
 
@@ -71,6 +72,7 @@ def autostart_enabled():
     if not IS_WIN:
         return False
     import winreg
+
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
             winreg.QueryValueEx(k, APP_ID)
@@ -83,6 +85,7 @@ def set_autostart(on, command=None):
     if not IS_WIN:
         return
     import winreg
+
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
         if on:
             winreg.SetValueEx(k, APP_ID, 0, winreg.REG_SZ, command or launch_command())

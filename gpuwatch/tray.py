@@ -1,5 +1,6 @@
 """System tray icon (pystray). Its callbacks run on pystray's thread, so they
 hand work to the Tk thread through app.call_soon()."""
+
 from gpuwatch import APP_ID, APP_NAME, icons
 
 try:
@@ -15,22 +16,28 @@ class Tray:
         self._status = self._title = None
         if pystray is None:
             return
-        I, SEP = pystray.MenuItem, pystray.Menu.SEPARATOR
+        Item, SEP = pystray.MenuItem, pystray.Menu.SEPARATOR
         call = app.call_soon
         menu = pystray.Menu(
-            I("Show / hide widget", lambda: call(app.toggle_visible), default=True),
+            Item("Show / hide widget", lambda: call(app.toggle_visible), default=True),
             SEP,
-            I("Add machine…", lambda: call(app.open_host_dialog)),
-            I("Manage machines…", lambda: call(app.open_manage)),
-            I("Settings…", lambda: call(app.open_settings)),
-            I("Refresh now", lambda: call(app.refresh_now)),
+            Item("Add machineâ€¦", lambda: call(app.open_host_dialog)),
+            Item("Manage machinesâ€¦", lambda: call(app.open_manage)),
+            Item("Settingsâ€¦", lambda: call(app.open_settings)),
+            Item("Refresh now", lambda: call(app.refresh_now)),
             SEP,
-            I("Always on top", lambda: call(app.set_topmost, not app.cfg["topmost"]),
-              checked=lambda item: bool(app.cfg["topmost"])),
-            I("Start with Windows", lambda: call(app.set_autostart, not app.autostart_on),
-              checked=lambda item: app.autostart_on),
+            Item(
+                "Always on top",
+                lambda: call(app.set_topmost, not app.cfg["topmost"]),
+                checked=lambda item: bool(app.cfg["topmost"]),
+            ),
+            Item(
+                "Start with Windows",
+                lambda: call(app.set_autostart, not app.autostart_on),
+                checked=lambda item: app.autostart_on,
+            ),
             SEP,
-            I(f"Quit {APP_NAME}", lambda: call(app.quit)),
+            Item(f"Quit {APP_NAME}", lambda: call(app.quit)),
         )
         try:
             self.icon = pystray.Icon(APP_ID, icons.tray_image("unknown"), APP_NAME, menu)

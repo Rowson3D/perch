@@ -29,11 +29,11 @@ class StatusTests(unittest.TestCase):
         t = Tracker()
         t.add(52, 0, now=0)
         self.assertEqual(t.evaluate(cfg(), now=0), BUSY)
-        t.add(48, 0, now=5)    # just under 50 - stays busy inside the 5-point dead zone
+        t.add(48, 0, now=5)  # just under 50 - stays busy inside the 5-point dead zone
         self.assertEqual(t.evaluate(cfg(), now=5), BUSY)
         t.add(44, 0, now=10)
         self.assertEqual(t.evaluate(cfg(), now=10), FREE)
-        t.add(48, 0, now=15)   # rising again: needs to reach 50 to flip
+        t.add(48, 0, now=15)  # rising again: needs to reach 50 to flip
         self.assertEqual(t.evaluate(cfg(), now=15), FREE)
 
     def test_utilization_counts(self):
