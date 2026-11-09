@@ -31,15 +31,58 @@ def dpi_aware():
             pass
 
 
+if IS_WIN:
+    from ctypes import wintypes
+
+    _user32 = ctypes.windll.user32
+    _user32.MonitorFromPoint.restype = ctypes.c_void_p
+    _user32.MonitorFromPoint.argtypes = [wintypes.POINT, wintypes.DWORD]
+
+    class _MONITORINFO(ctypes.Structure):
+        _fields_ = [
+            ("cbSize", wintypes.DWORD),
+            ("rcMonitor", wintypes.RECT),
+            ("rcWork", wintypes.RECT),
+            ("dwFlags", wintypes.DWORD),
+        ]
+
+    _user32.GetMonitorInfoW.argtypes = [ctypes.c_void_p, ctypes.POINTER(_MONITORINFO)]
+
+
 def point_on_a_monitor(x, y):
     if not IS_WIN:
         return True
     try:
-        from ctypes import wintypes
-
-        return bool(ctypes.windll.user32.MonitorFromPoint(wintypes.POINT(int(x), int(y)), 0))
+        return bool(_user32.MonitorFromPoint(wintypes.POINT(int(x), int(y)), 0))
     except Exception:
         return True
+
+
+def work_area(x, y):
+    """(left, top, right, bottom) of the usable area (excluding taskbar) of the monitor nearest (x, y)."""
+    if not IS_WIN:
+        return None
+    try:
+        mon = _user32.MonitorFromPoint(wintypes.POINT(int(x), int(y)), 2)  # MONITOR_DEFAULTTONEAREST
+        info = _MONITORINFO()
+        info.cbSize = ctypes.sizeof(_MONITORINFO)
+        _user32.GetMonitorInfoW(mon, ctypes.byref(info))
+        r = info.rcWork
+        return r.left, r.top, r.right, r.bottom
+    except Exception:
+        return None
+
+
+def ago(seconds):
+    """Compact human duration: 45s, 12m, 3h, 2d."""
+    s = max(0, int(seconds))
+    if s < 60:
+        return f"{s}s"
+    if s < 3600:
+        return f"{s // 60}m"
+    if s < 86400:
+        return f"{s // 3600}h {s % 3600 // 60}m" if s < 36000 else f"{s // 3600}h"
+    return f"{s // 86400}d"
 
 
 def launch_detached(args):

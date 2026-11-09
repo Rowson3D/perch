@@ -40,9 +40,9 @@ def main():
             return
     if not util.single_instance():
         return
-    from perch.ui import App
+    from perch.app import App
 
-    App(first_run="--first-run" in args).root.mainloop()
+    App(first_run="--first-run" in args).run()
 
 
 if __name__ == "__main__":

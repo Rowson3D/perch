@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "perch"
 dynamic = ["version"]
-description = "Discreet, customizable desktop cards for your machines - GPUs today, websites next."
+description = "Discreet, customizable desktop cards for your machines and websites."
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Rowson3D" }]
 requires-python = ">=3.10"
-dependencies = ["pystray>=0.19", "Pillow>=10", "psutil>=5.9"]
+dependencies = ["pystray>=0.19", "Pillow>=10", "psutil>=5.9", "certifi>=2024.2"]
 
 [project.optional-dependencies]
 build = ["pyinstaller>=6.10"]

@@ -1,10 +1,28 @@
 # Perch
 
-**Discreet, customizable desktop cards for your machines.** Perch sits quietly on your Windows desktop and keeps watch. Its first card shows which NVIDIA GPUs across your machines are **free**, **in use**, or **held**. A **Sites** card (uptime, response time, SSL and domain expiry for your websites) is next.
+**Discreet, customizable desktop cards for your machines and websites.** Perch sits quietly on your Windows desktop and keeps watch. Each card is its own small floating window: put it anywhere, style it, hide it, or hatch another.
 
-![Perch GPU card with hover details](docs/widget_tip.png)
+![GPU and Sites cards on the desktop](docs/cards.png)
 
-## GPU card
+## Cards
+
+### Sites
+
+Your websites at a glance.
+
+- **Up or down.** Each site is checked every minute (adjustable). It only counts as **down** after 2 failed checks in a row, so a single blip won't alert you.
+- **Response time** with a graph, plus **uptime %** for 24 hours, 7 days and 30 days.
+- **SSL certificate and domain expiry.** Perch shows the days left and warns you before either lapses. Domain dates come from the registry (RDAP).
+- **"Must contain" check.** A site also counts as down if a phrase you choose is missing from the page, e.g. when a broken deploy serves an error page with status 200.
+- **Notifications:** when a site goes down, when it comes back (with how long it was out), and when its certificate or domain is about to expire.
+- **Shortcuts:**
+  - Double-click a site to open it.
+  - Right-click it to open its **admin page** or **repository**, check it now, or pause checks.
+- **Hover a site** to see the full picture: status code, uptime, response time, SSL issuer and expiry, domain registrar and expiry, and the last outage.
+
+### GPUs
+
+Which NVIDIA GPUs across your machines are **free**, **in use**, or **held**.
 
 - **Any number of machines.** Add a machine by IP or hostname and pick which of its GPUs to show.
 - **Three ways to connect:**
@@ -20,14 +38,30 @@
 - **History graphs** of VRAM use (filled) and utilization (line).
 - **"Notify me when free."** Right-click a busy GPU to get a Windows notification when it frees up.
 
+![GPU hover details](docs/widget_tip.png)
+
+## Your perch: hatching and managing cards
+
+Open **Your perch** from the tray icon or any card's **⋯** menu. Every card on your desktop is shown as a tile with its live status, and from there you can open its **Settings**, **Hide** or **Show** it, or let it **Fly away** (remove it; it floats off your desktop).
+
+The dashed **Hatch a new card** tile opens the gallery:
+
+1. Pick a card type.
+2. Name it.
+3. Do the quick setup, e.g. paste your site addresses, one per line.
+4. Click **Hatch**. The card drops onto your desktop.
+
+You can have as many cards as you like, e.g. one Sites card for clients and another for your own projects. **This PC**, **GitHub** and a **build-your-own card** builder are coming next.
+
 ## Everywhere in Perch
 
 - **Discreet:**
-  - Borderless and draggable, and it remembers its position.
-  - Adjustable opacity.
-  - Optionally always on top.
-  - Hides to the tray in one click.
-- **Tray icon:** it goes green when anything is free and red when everything is busy. Every option is a right-click away.
+  - Borderless cards that snap to screen edges and to each other.
+  - Per-card opacity and always-on-top.
+  - Hide any card in one click.
+- **Tray icon:**
+  - It shows the worst status across all your cards: **green** when all is well, **amber** for warnings (e.g. an SSL certificate expiring soon, or every GPU busy), **red** when something is down.
+  - Its tooltip summarises every card.
 - **One consistent look.** Every window, menu and dialog uses the same dark [design system](docs/design-system.md).
 - **Proper install.** A single exe that installs per-user with no admin rights. It adds a Start-menu entry, an Add/Remove Programs entry and optional start-with-Windows, and updates in place.
 
@@ -46,7 +80,7 @@ Other options:
 
 ## Adding machines
 
-Click **+** on the GPU card (or use the tray menu → *Add machine…*). Then:
+Click **+** on a GPU card (or right-click it → *Add machine…*). Then:
 
 1. Choose how to connect.
 2. Enter the IP or hostname.
@@ -87,17 +121,18 @@ The agent is read-only. It only reports GPU stats and process names, and it can'
 | 🟡 **HELD** | VRAM is at or above the threshold, but utilization has been ~0% for the "held" period |
 | ⚪ offline | the machine couldn't be reached (the reason is shown on the card) |
 
-All thresholds and time windows are in **Settings** (right-click the card).
+All thresholds and time windows are in the card's **Settings** (right-click the card).
 
 ## Using it
 
-- **Drag** anywhere on a card to move it.
-- **Hover** a GPU for its details and processes.
-- **Right-click** a GPU to get notified when it's free, or to edit its machine.
-- **Right-click** anywhere else, or click **⋯**, for the menu.
-- **–** hides Perch to the tray. Click the tray icon to bring it back.
+- **Drag** anywhere on a card to move it. It snaps to screen edges and to other cards.
+- **Hover** a row for its full details.
+- **Right-click** a row for its actions (notify when free, open site, check now…).
+- **Right-click** anywhere else on a card, or click **⋯**, for the card menu.
+- **+** adds a machine or site to that card. **–** hides the card.
+- **Click the tray icon** to show or hide all cards.
 
-Settings are stored in `%APPDATA%\Perch\config.json`.
+Settings are stored in `%APPDATA%\Perch\config.json`, and site history in `%APPDATA%\Perch\state\`.
 
 ## Uninstall
 
@@ -105,10 +140,19 @@ Use **Settings → Apps → Installed apps → Perch → Uninstall**, or run `Pe
 
 ## Roadmap
 
-- **Sites card:** up/down status, response time, SSL certificate and domain expiry, and alerts for your websites.
-- **Card builder:** make your own card from a website, a JSON API or a script, either visually or in a few lines of Python.
-- **More cards:** This PC (CPU, RAM, disk, network), GitHub builds, Docker.
-- **More customization:** desktop-layer mode, click-through, auto-hide while a fullscreen app or game is running, snapping, and saved layouts.
+- **More cards:** This PC (CPU, RAM, disk, network), GitHub (builds and pull requests), Docker.
+- **Build your own card:** make a card from a website, a JSON API or a script, either visually or in a few lines of Python.
+- **More customization:** desktop-layer mode, click-through, auto-hide while a fullscreen app or game is running, and saved layouts.
+
+## Adding a card type
+
+A card is one class in `perch/cards/`:
+
+1. Subclass `Card` from `perch/cards/base.py`.
+2. Implement `render`, `update_view`, `start`, `status`, `menu_items` and `settings_rows`.
+3. Register the class in `perch/cards/__init__.py`.
+
+The window, dragging and snapping, menus, settings window, hover details and animations all come from the base class and the shared components, so a new card automatically looks and behaves like the others.
 
 ## Building from source
 
@@ -131,7 +175,7 @@ pip install -e ".[dev]"
 python -m perch
 ```
 
-The code follows ruff's lint and format rules (`ruff check .`, `ruff format .`). Pushing a tag like `v0.1.0` makes GitHub Actions build both executables and attach them to a release.
+The code follows ruff's lint and format rules (`ruff check .`, `ruff format .`). Pushing a tag like `v0.2.0` makes GitHub Actions build both executables and attach them to a release.
 
 ## License
 

@@ -108,6 +108,9 @@ def apply(root: tk.Misc) -> ttk.Style:
         s.configure(f"{name}.TLabel", **opts)
     s.configure("Card.TFrame", background=T.ROW)
     s.configure("Card.TLabel", background=T.ROW)
+    s.configure("CardTitle.TLabel", background=T.ROW, font=T.FT)
+    s.configure("CardMuted.TLabel", background=T.ROW, foreground=T.MUTED, font=T.FS)
+    s.configure("CardBadge.TLabel", background=T.ACCENT_DIM, foreground=T.ACCENT, font=T.FS, padding=(6, 1))
     s.configure("TSeparator", background=T.BORDER)
 
     # Buttons: secondary (default) and primary (Accent)
@@ -159,10 +162,52 @@ def apply(root: tk.Misc) -> ttk.Style:
     )
     s.map(
         "Danger.TButton",
-        background=[("active", "#f37477")],
-        lightcolor=[("active", "#f37477")],
-        darkcolor=[("active", "#f37477")],
-        bordercolor=[("active", "#f37477")],
+        background=[("active", T.RED_HOVER)],
+        lightcolor=[("active", T.RED_HOVER)],
+        darkcolor=[("active", T.RED_HOVER)],
+        bordercolor=[("active", T.RED_HOVER)],
+    )
+    # Compact variants for tiles and inline actions
+    small = {"padding": (10, 3), "font": T.FS}
+    s.configure("Small.TButton", **small)
+    s.configure(
+        "SmallAccent.TButton",
+        background=T.ACCENT,
+        foreground=T.ON_ACCENT,
+        bordercolor=T.ACCENT,
+        lightcolor=T.ACCENT,
+        darkcolor=T.ACCENT,
+        relief="flat",
+        borderwidth=1,
+        focusthickness=0,
+        padding=(10, 3),
+        font=(T.FONT_SEMI, 8),
+    )
+    s.map(
+        "SmallAccent.TButton",
+        background=[("disabled", T.RAISED), ("active", T.ACCENT_HOVER)],
+        lightcolor=[("disabled", T.RAISED), ("active", T.ACCENT_HOVER)],
+        darkcolor=[("disabled", T.RAISED), ("active", T.ACCENT_HOVER)],
+        bordercolor=[("disabled", T.RAISED), ("active", T.ACCENT_HOVER)],
+        foreground=[("disabled", T.GREY)],
+    )
+    s.configure(
+        "SmallDanger.TButton",
+        background=T.ROW,
+        foreground=T.RED,
+        bordercolor=T.BORDER,
+        lightcolor=T.ROW,
+        darkcolor=T.ROW,
+        relief="flat",
+        borderwidth=1,
+        focusthickness=0,
+        **small,
+    )
+    s.map(
+        "SmallDanger.TButton",
+        background=[("active", T.RED_DIM)],
+        lightcolor=[("active", T.RED_DIM)],
+        darkcolor=[("active", T.RED_DIM)],
     )
 
     # Text inputs

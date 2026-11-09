@@ -8,6 +8,15 @@ HYSTERESIS = 5.0  # percentage points a busy GPU must drop below a threshold to 
 IDLE_UTIL = 5.0  # utilization at or below this counts as "doing nothing"
 KEEP_SECONDS = 4 * 3600
 
+DETECTION_DEFAULTS = {
+    "threshold": 50,  # VRAM % at or above which a GPU counts as IN USE
+    "use_util": True,  # also IN USE when utilization averages >= util_threshold...
+    "util_threshold": 40,
+    "util_window": 60,  # ...over this many seconds
+    "detect_held": True,  # VRAM held but GPU idle for held_minutes -> HELD
+    "held_minutes": 10,
+}
+
 
 class Tracker:
     """Rolling history for one GPU plus its current state."""

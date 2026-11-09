@@ -24,7 +24,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 GPU_QUERY = "index,uuid,name,memory.used,memory.total,utilization.gpu,temperature.gpu"
 PROC_QUERY = "gpu_uuid,pid,process_name,used_memory"
 FMT = "--format=csv,noheader,nounits"

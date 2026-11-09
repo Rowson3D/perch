@@ -1,6 +1,6 @@
-"""Perch - discreet, customizable desktop cards for your machines: GPUs today, websites next."""
+"""Perch - discreet, customizable desktop cards for your machines and websites."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 APP_NAME = "Perch"
 APP_ID = "Perch"
 PUBLISHER = "Rowson3D"

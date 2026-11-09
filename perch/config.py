@@ -1,9 +1,15 @@
-"""Settings file and the 'start with Windows' registry entry."""
+"""Settings file, card definitions and the 'start with Windows' registry entry.
+
+Config v2 layout:
+    {"version": 2, "cards": [card, ...]}
+    card = {"id", "type", "title", "x", "y", "visible", "topmost", "opacity", "settings": {...type specific}}
+"""
 
 import copy
 import json
 import os
 import sys
+import uuid
 
 from perch import APP_ID
 from perch.util import IS_WIN
@@ -11,30 +17,37 @@ from perch.util import IS_WIN
 APPDATA = os.environ.get("APPDATA") or os.path.expanduser("~")
 CONFIG_DIR = os.path.join(APPDATA, APP_ID)
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
+STATE_DIR = os.path.join(CONFIG_DIR, "state")  # per-card history (e.g. site uptime)
 OLD_CONFIG_PATH = os.path.join(APPDATA, "GpuWatch", "config.json")  # from before the rename
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+VERSION = 2
 
-DEFAULTS = {
-    # detection
-    "threshold": 50,  # VRAM % at or above which a GPU counts as IN USE
-    "use_util": True,  # also IN USE when utilization averages >= util_threshold...
-    "util_threshold": 40,
-    "util_window": 60,  # ...over this many seconds
-    "detect_held": True,  # VRAM held but GPU idle for held_minutes -> HELD
-    "held_minutes": 10,
-    # display
-    "show_history": True,
-    "history_minutes": 10,
-    "refresh": 5,
-    "topmost": True,
-    "opacity": 0.94,
-    "visible": True,
-    "x": None,
-    "y": None,
-    # data
-    "hosts": [],
-    "watch": [],  # "hostid|gpukey" entries waiting for a 'GPU is free' notification
-}
+CARD_DEFAULTS = {"visible": True, "topmost": True, "opacity": 0.94, "x": None, "y": None}
+WINDOW_KEYS = tuple(CARD_DEFAULTS)
+
+
+def new_card(card_type, title, settings=None):
+    return {
+        "id": uuid.uuid4().hex[:8],
+        "type": card_type,
+        "title": title,
+        **copy.deepcopy(CARD_DEFAULTS),
+        "settings": settings or {},
+    }
+
+
+def migrate(cfg):
+    """Bring any older config up to v2. v1 (GPU Watch) was a single flat GPU widget."""
+    if cfg.get("version") == VERSION and isinstance(cfg.get("cards"), list):
+        return cfg, False
+    if "hosts" in cfg or "threshold" in cfg:
+        card = new_card("gpus", "GPUs")
+        for k in WINDOW_KEYS:
+            if k in cfg:
+                card[k] = cfg[k]
+        card["settings"] = {k: v for k, v in cfg.items() if k not in WINDOW_KEYS and k != "version"}
+        return {"version": VERSION, "cards": [card]}, True
+    return {"version": VERSION, "cards": []}, True
 
 
 def load_config():
@@ -48,11 +61,14 @@ def load_config():
             cfg = {}
     except (OSError, ValueError):
         cfg = {}
-    for k, v in DEFAULTS.items():
-        cfg.setdefault(k, copy.deepcopy(v))
-    if path == OLD_CONFIG_PATH:
+    cfg, changed = migrate(cfg)
+    for card in cfg["cards"]:
+        for k, v in CARD_DEFAULTS.items():
+            card.setdefault(k, copy.deepcopy(v))
+        card.setdefault("settings", {})
+    if changed or path == OLD_CONFIG_PATH:
         try:
-            save_config(cfg)  # migrate now so the new location is the source of truth
+            save_config(cfg)  # the new location/format becomes the source of truth
         except OSError:
             pass
     return cfg
@@ -64,6 +80,30 @@ def save_config(cfg):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2)
     os.replace(tmp, CONFIG_PATH)
+
+
+def load_state(card_id):
+    try:
+        with open(os.path.join(STATE_DIR, f"{card_id}.json"), encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(card_id, data):
+    os.makedirs(STATE_DIR, exist_ok=True)
+    path = os.path.join(STATE_DIR, f"{card_id}.json")
+    with open(path + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    os.replace(path + ".tmp", path)
+
+
+def delete_state(card_id):
+    try:
+        os.remove(os.path.join(STATE_DIR, f"{card_id}.json"))
+    except OSError:
+        pass
 
 
 def launch_command():

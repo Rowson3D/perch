@@ -4,8 +4,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from perch.config import DEFAULTS  # noqa: E402
 from perch.status import BUSY, FREE, HELD, UNKNOWN, Tracker  # noqa: E402
+from perch.status import DETECTION_DEFAULTS as DEFAULTS  # noqa: E402
 
 
 def cfg(**kw):
