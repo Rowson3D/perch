@@ -4,8 +4,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from gpuwatch.config import DEFAULTS  # noqa: E402
-from gpuwatch.status import BUSY, FREE, HELD, UNKNOWN, Tracker  # noqa: E402
+from perch.config import DEFAULTS  # noqa: E402
+from perch.status import BUSY, FREE, HELD, UNKNOWN, Tracker  # noqa: E402
 
 
 def cfg(**kw):

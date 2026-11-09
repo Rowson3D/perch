@@ -1,4 +1,4 @@
-"""Generates build/gpuwatch.ico and the Windows version-info files used by PyInstaller."""
+"""Generates build/perch.ico and the Windows version-info files used by PyInstaller."""
 
 import os
 import sys
@@ -6,7 +6,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from gpuwatch import APP_NAME, PUBLISHER, __version__, icons  # noqa: E402
+from perch import APP_NAME, PUBLISHER, __version__, icons  # noqa: E402
 
 BUILD = os.path.join(ROOT, "build")
 TEMPLATE = """VSVersionInfo(
@@ -30,12 +30,12 @@ TEMPLATE = """VSVersionInfo(
 
 def main():
     os.makedirs(BUILD, exist_ok=True)
-    icons.save_ico(os.path.join(BUILD, "gpuwatch.ico"))
+    icons.save_ico(os.path.join(BUILD, "perch.ico"))
     parts = [int(p) for p in __version__.split(".")] + [0] * 4
     v4 = tuple(parts[:4])
     for name, desc, fname in (
-        ("GpuWatch", APP_NAME, "version_gpuwatch.txt"),
-        ("gpu-agent", f"{APP_NAME} agent", "version_agent.txt"),
+        ("Perch", APP_NAME, "version_perch.txt"),
+        ("perch-agent", f"{APP_NAME} agent", "version_agent.txt"),
     ):
         with open(os.path.join(BUILD, fname), "w", encoding="utf-8") as f:
             f.write(TEMPLATE.format(v4=v4, v=__version__, company=PUBLISHER, desc=desc, name=name, product=APP_NAME))

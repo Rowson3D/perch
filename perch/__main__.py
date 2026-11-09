@@ -1,4 +1,4 @@
-"""Entry point:  python -m gpuwatch   (or the packaged GpuWatch.exe)
+"""Entry point:  python -m perch   (or the packaged Perch.exe)
 
 Options:
   --portable    run without offering to install (packaged exe only)
@@ -14,33 +14,33 @@ if __package__ in (None, ""):  # run as a plain script / by PyInstaller
 
 
 def main():
-    from gpuwatch import util
+    from perch import util
 
     args = sys.argv[1:]
     util.dpi_aware()
     if util.IS_WIN and "--uninstall" in args:
-        from gpuwatch import installer
+        from perch import installer
 
         installer.run_uninstall(quiet="--quiet" in args)
         return
     if util.IS_WIN and "--install" in args:
-        from gpuwatch import installer
+        from perch import installer
 
         if not installer.frozen():
-            print("--install only works from the packaged GpuWatch.exe")
+            print("--install only works from the packaged Perch.exe")
             return
         installer.install(autostart="--no-autostart" not in args, desktop="--desktop" in args)
         if "--no-launch" not in args:
             util.launch_detached([installer.EXE, "--first-run"])
         return
     if util.IS_WIN:
-        from gpuwatch import installer
+        from perch import installer
 
         if installer.should_offer_setup(args) and installer.run_setup_dialog() != "portable":
             return
     if not util.single_instance():
         return
-    from gpuwatch.ui import App
+    from perch.ui import App
 
     App(first_run="--first-run" in args).root.mainloop()
 

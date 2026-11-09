@@ -5,11 +5,13 @@ import json
 import os
 import sys
 
-from gpuwatch import APP_ID
-from gpuwatch.util import IS_WIN
+from perch import APP_ID
+from perch.util import IS_WIN
 
-CONFIG_DIR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_ID)
+APPDATA = os.environ.get("APPDATA") or os.path.expanduser("~")
+CONFIG_DIR = os.path.join(APPDATA, APP_ID)
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
+OLD_CONFIG_PATH = os.path.join(APPDATA, "GpuWatch", "config.json")  # from before the rename
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 DEFAULTS = {
@@ -36,8 +38,11 @@ DEFAULTS = {
 
 
 def load_config():
+    path = CONFIG_PATH
+    if not os.path.exists(path) and os.path.exists(OLD_CONFIG_PATH):
+        path = OLD_CONFIG_PATH  # first run after the rename: carry machines + settings over
     try:
-        with open(CONFIG_PATH, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             cfg = json.load(f)
         if not isinstance(cfg, dict):
             cfg = {}
@@ -45,6 +50,11 @@ def load_config():
         cfg = {}
     for k, v in DEFAULTS.items():
         cfg.setdefault(k, copy.deepcopy(v))
+    if path == OLD_CONFIG_PATH:
+        try:
+            save_config(cfg)  # migrate now so the new location is the source of truth
+        except OSError:
+            pass
     return cfg
 
 

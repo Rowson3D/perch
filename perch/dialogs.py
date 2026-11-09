@@ -4,14 +4,14 @@ import tkinter as tk
 import uuid
 from tkinter import ttk
 
-from gpuwatch import APP_NAME, __version__
-from gpuwatch import theme as T
-from gpuwatch.components import Dialog, alert, confirm
-from gpuwatch.sources import AGENT_PORT, METHOD_KEYS, METHODS, SSH_PORT, fetch, gkey
-from gpuwatch.util import clip
+from perch import APP_NAME, __version__
+from perch import theme as T
+from perch.components import Dialog, alert, confirm
+from perch.sources import AGENT_PORT, METHOD_KEYS, METHODS, SSH_PORT, fetch, gkey
+from perch.util import clip
 
 METHOD_HELP = {
-    "agent": "The machine must be running the GPU Watch agent (gpu-agent / gpu_agent.py).",
+    "agent": "The machine must be running the Perch agent (perch-agent / perch_agent.py).",
     "ssh": "Uses your SSH key - `ssh user@host` must already work without a password prompt.",
     "local": "Reads the GPUs in this PC directly. Nothing else to install.",
 }

@@ -4,9 +4,9 @@ import ctypes
 import tkinter as tk
 from tkinter import ttk
 
-from gpuwatch import theme as T
+from perch import theme as T
 
-THEME_NAME = "gpuwatch-dark"
+THEME_NAME = "perch-dark"
 
 
 def dark_titlebar(win: tk.Misc) -> None:

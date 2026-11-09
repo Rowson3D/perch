@@ -9,9 +9,9 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gpuwatch import style
-from gpuwatch import theme as T
-from gpuwatch.util import point_on_a_monitor
+from perch import style
+from perch import theme as T
+from perch.util import point_on_a_monitor
 
 BUTTON_STYLES = {"primary": "Accent.TButton", "secondary": "TButton", "danger": "Danger.TButton"}
 

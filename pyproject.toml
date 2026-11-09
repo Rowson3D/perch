@@ -3,9 +3,9 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gpu-watch"
+name = "perch"
 dynamic = ["version"]
-description = "A discreet desktop widget showing which GPUs on your machines are free, in use or held."
+description = "Discreet, customizable desktop cards for your machines - GPUs today, websites next."
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Rowson3D" }]
@@ -17,16 +17,16 @@ build = ["pyinstaller>=6.10"]
 dev = ["ruff>=0.6"]
 
 [project.gui-scripts]
-gpu-watch = "gpuwatch.__main__:main"
+perch = "perch.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/Rowson3D/gpu-watch"
+Homepage = "https://github.com/Rowson3D/perch"
 
 [tool.setuptools]
-packages = ["gpuwatch"]
+packages = ["perch"]
 
 [tool.setuptools.dynamic]
-version = { attr = "gpuwatch.__version__" }
+version = { attr = "perch.__version__" }
 
 [tool.ruff]
 line-length = 120
@@ -40,4 +40,4 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["gpuwatch"]
+known-first-party = ["perch"]

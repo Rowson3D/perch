@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-GPU Watch agent - run this on each GPU machine you want to watch.
+Perch agent - run this on each GPU machine you want to watch.
 
 Serves NVIDIA GPU stats (from nvidia-smi) as JSON at:
     http://<this-machine>:9123/gpus
@@ -9,7 +9,7 @@ Includes which processes (and users) are on each GPU. Read-only, standard
 library only (uses psutil for process owners if it happens to be installed).
 Python 3.7+.
 
-    python3 gpu_agent.py [--port 9123] [--bind 0.0.0.0]
+    python3 perch_agent.py [--port 9123] [--bind 0.0.0.0]
 """
 
 import argparse
@@ -24,7 +24,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.0.0"
+VERSION = "0.1.0"
 GPU_QUERY = "index,uuid,name,memory.used,memory.total,utilization.gpu,temperature.gpu"
 PROC_QUERY = "gpu_uuid,pid,process_name,used_memory"
 FMT = "--format=csv,noheader,nounits"
@@ -164,12 +164,12 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="GPU Watch agent")
+    ap = argparse.ArgumentParser(description="Perch agent")
     ap.add_argument("--port", type=int, default=9123)
     ap.add_argument("--bind", default="0.0.0.0")
     args = ap.parse_args()
     server = ThreadingHTTPServer((args.bind, args.port), Handler)
-    print(f"GPU Watch agent {VERSION} on http://{args.bind}:{args.port}/gpus (nvidia-smi: {SMI})", flush=True)
+    print(f"Perch agent {VERSION} on http://{args.bind}:{args.port}/gpus (nvidia-smi: {SMI})", flush=True)
     server.serve_forever()
 
 

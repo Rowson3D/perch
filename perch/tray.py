@@ -1,7 +1,7 @@
 """System tray icon (pystray). Its callbacks run on pystray's thread, so they
 hand work to the Tk thread through app.call_soon()."""
 
-from gpuwatch import APP_ID, APP_NAME, icons
+from perch import APP_ID, APP_NAME, icons
 
 try:
     import pystray

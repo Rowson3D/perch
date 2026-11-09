@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from gpuwatch.sources import gkey, parse_gpus, parse_procs, parse_ps  # noqa: E402
+from perch.sources import gkey, parse_gpus, parse_procs, parse_ps  # noqa: E402
 
 GPUS = """0, GPU-aaa, NVIDIA GeForce RTX 4090, 18000, 24564, 97, 71
 1, GPU-bbb, NVIDIA A100-SXM4-80GB, [N/A], 81920, [N/A], 40

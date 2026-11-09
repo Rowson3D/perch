@@ -7,12 +7,12 @@ import time
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
 
-from gpuwatch import APP_NAME, icons, style
-from gpuwatch import config as C
-from gpuwatch.components import PopupMenu
-from gpuwatch.sources import fetch, gkey
-from gpuwatch.status import BUSY, FREE, HELD, UNKNOWN, Tracker
-from gpuwatch.theme import (
+from perch import APP_NAME, icons, style
+from perch import config as C
+from perch.components import PopupMenu
+from perch.sources import fetch, gkey
+from perch.status import BUSY, FREE, HELD, UNKNOWN, Tracker
+from perch.theme import (
     ACCENT,
     AMBER,
     AMBER_DIM,
@@ -42,8 +42,8 @@ from gpuwatch.theme import (
     UTIL_LINE,
     F,
 )
-from gpuwatch.tray import Tray
-from gpuwatch.util import clip, gb, point_on_a_monitor, short_name
+from perch.tray import Tray
+from perch.util import clip, gb, point_on_a_monitor, short_name
 
 STYLE = {
     FREE: (GREEN, GREEN_DIM, "FREE"),
@@ -97,7 +97,7 @@ class App:
         outer.pack(fill="both", expand=True)
         hdr = tk.Frame(outer, bg=BG)
         hdr.pack(fill="x")
-        tk.Label(hdr, text=APP_NAME, bg=BG, fg=FG, font=FT).pack(side="left")
+        tk.Label(hdr, text="GPUs", bg=BG, fg=FG, font=FT).pack(side="left")
         self.summary = tk.Label(hdr, text="", bg=BG, fg=MUTED, font=FS)
         self.summary.pack(side="left", padx=(8, 0), pady=(2, 0))
         if self.tray.available:
@@ -536,7 +536,7 @@ class App:
         return d
 
     def open_host_dialog(self, host=None):
-        from gpuwatch.dialogs import HostDialog
+        from perch.dialogs import HostDialog
 
         d = self.dialogs.get("host")
         if d and d.win.winfo_exists():
@@ -544,12 +544,12 @@ class App:
         self.dialogs["host"] = HostDialog(self, host)
 
     def open_manage(self):
-        from gpuwatch.dialogs import ManageDialog
+        from perch.dialogs import ManageDialog
 
         self._dialog("manage", lambda: ManageDialog(self))
 
     def open_settings(self):
-        from gpuwatch.dialogs import SettingsDialog
+        from perch.dialogs import SettingsDialog
 
         self._dialog("settings", lambda: SettingsDialog(self))
 

@@ -1,9 +1,9 @@
-"""Per-user install / update / uninstall for the packaged GpuWatch.exe (no admin needed).
+"""Per-user install / update / uninstall for the packaged Perch.exe (no admin needed).
 
-Running GpuWatch.exe from anywhere other than its install folder shows a small
-setup window. Installing copies the exe to %LOCALAPPDATA%\\Programs\\GPU Watch,
+Running Perch.exe from anywhere other than its install folder shows a small
+setup window. Installing copies the exe to %LOCALAPPDATA%\\Programs\\Perch,
 adds Start-menu (and optional desktop) shortcuts, an Add/Remove Programs entry,
-and the 'start with Windows' entry. `GpuWatch.exe --uninstall` reverses it.
+and the 'start with Windows' entry. `Perch.exe --uninstall` reverses it.
 """
 
 import ctypes
@@ -15,20 +15,26 @@ import time
 import tkinter as tk
 from tkinter import ttk
 
-from gpuwatch import APP_ID, APP_NAME, PUBLISHER, REPO_URL, __version__, icons
-from gpuwatch import config as C
-from gpuwatch import theme as T
-from gpuwatch.components import Dialog, alert, confirm
-from gpuwatch.util import IS_WIN, NEW_GROUP, NO_WINDOW, launch_detached
+from perch import APP_ID, APP_NAME, PUBLISHER, REPO_URL, __version__, icons
+from perch import config as C
+from perch import theme as T
+from perch.components import Dialog, alert, confirm
+from perch.util import IS_WIN, NEW_GROUP, NO_WINDOW, launch_detached
 
 LOCAL = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
 INSTALL_DIR = os.path.join(LOCAL, "Programs", APP_NAME)
-EXE = os.path.join(INSTALL_DIR, "GpuWatch.exe")
+EXE = os.path.join(INSTALL_DIR, "Perch.exe")
 UNINSTALL_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + APP_ID
 START_MENU_LNK = os.path.join(
     os.environ.get("APPDATA", ""), "Microsoft", "Windows", "Start Menu", "Programs", APP_NAME + ".lnk"
 )
-LEGACY_DIR = os.path.join(LOCAL, APP_ID)  # the original script-based install
+
+# Earlier builds shipped as "GPU Watch". Installing Perch removes them so there's never two copies.
+OLD_NAME, OLD_ID = "GPU Watch", "GpuWatch"
+OLD_INSTALL_DIR = os.path.join(LOCAL, "Programs", OLD_NAME)
+OLD_SCRIPT_DIR = os.path.join(LOCAL, OLD_ID)  # the very first script-based install
+OLD_UNINSTALL_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + OLD_ID
+OLD_START_MENU_LNK = os.path.join(os.path.dirname(START_MENU_LNK), OLD_NAME + ".lnk")
 
 
 def frozen():
@@ -82,7 +88,7 @@ def make_shortcut(lnk, target):
 
 
 def stop_running():
-    """Close other running copies (including the old script version)."""
+    """Close other running copies, including ones from before the rename."""
     import psutil
 
     skip = {os.getpid(), os.getppid()}  # PyInstaller one-file = bootloader parent + child
@@ -95,8 +101,10 @@ def stop_running():
             cmd = " ".join(p.info["cmdline"] or []).lower()
         except Exception:
             continue
-        dev_copy = name.startswith("python") and ("-m gpuwatch" in cmd or "gpuwatch\\__main__.py" in cmd)
-        if name == "gpuwatch.exe" or "gpu_watch.pyw" in cmd or dev_copy:
+        dev_copy = name.startswith("python") and any(
+            marker in cmd for marker in ("-m perch", "perch\\__main__.py", "-m gpuwatch", "gpuwatch\\__main__.py")
+        )
+        if name in ("perch.exe", "gpuwatch.exe") or "gpu_watch.pyw" in cmd or dev_copy:
             try:
                 p.kill()
                 victims.append(p)
@@ -141,8 +149,31 @@ def install(autostart=True, desktop=False):
         make_shortcut(desktop_lnk(), EXE)
     register_uninstall()
     C.set_autostart(autostart, f'"{EXE}"')
-    if os.path.exists(os.path.join(LEGACY_DIR, "gpu_watch.pyw")):
-        shutil.rmtree(LEGACY_DIR, ignore_errors=True)
+    remove_old_versions()
+
+
+def remove_old_versions():
+    """Remove an earlier 'GPU Watch' install (its settings are migrated by config.load_config)."""
+    import winreg
+
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, C.RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
+        try:
+            winreg.DeleteValue(k, OLD_ID)
+        except FileNotFoundError:
+            pass
+    try:
+        winreg.DeleteKey(winreg.HKEY_CURRENT_USER, OLD_UNINSTALL_KEY)
+    except OSError:
+        pass
+    for lnk in (OLD_START_MENU_LNK, os.path.join(desktop_dir(), OLD_NAME + ".lnk")):
+        try:
+            os.remove(lnk)
+        except OSError:
+            pass
+    if os.path.exists(os.path.join(OLD_INSTALL_DIR, "GpuWatch.exe")):
+        shutil.rmtree(OLD_INSTALL_DIR, ignore_errors=True)
+    if os.path.exists(os.path.join(OLD_SCRIPT_DIR, "gpu_watch.pyw")):
+        shutil.rmtree(OLD_SCRIPT_DIR, ignore_errors=True)
 
 
 def uninstall(purge=False):
@@ -172,7 +203,7 @@ def uninstall(purge=False):
 
 
 def _hidden_root():
-    from gpuwatch import style
+    from perch import style
 
     root = tk.Tk()
     root.withdraw()
@@ -233,7 +264,7 @@ def run_setup_dialog():
     ttk.Label(titles, text=f"Version {__version__}", style="Muted.TLabel").pack(anchor="w")
     ttk.Label(
         f,
-        text="A small desktop widget that shows which GPUs on your machines are free or in use.",
+        text="Discreet desktop cards for your machines. Start with your GPUs - free, in use or held - at a glance.",
         wraplength=380,
         justify="left",
     ).pack(anchor="w", pady=(T.SECTION, T.GAP))

@@ -1,8 +1,8 @@
 # Design system
 
-Every window GPU Watch shows is built from **one set of tokens** and **one set of components**, so they all look and behave the same. Future Rowson3D desktop tools should reuse the same tokens.
+Every window Perch shows is built from **one set of tokens** and **one set of components**, so they all look and behave the same. Future Rowson3D desktop tools should reuse the same tokens.
 
-## Tokens: `gpuwatch/theme.py`
+## Tokens: `perch/theme.py`
 
 Colors, fonts, spacing and sizes live only in `theme.py`. **Never hard-code a color, font or padding anywhere else.**
 
@@ -15,7 +15,7 @@ Colors, fonts, spacing and sizes live only in `theme.py`. **Never hard-code a co
 | Type | `FS` 8pt hints · `F` 9pt body · `FB` 9pt emphasis · `FT` 10pt titles · `FH` 12pt headings · `FD` 16pt display · `MONO` |
 | Spacing | `PAD` 16 window padding · `SECTION` 14 between sections · `GAP` 8 between related controls |
 
-## Theme: `gpuwatch/style.py`
+## Theme: `perch/style.py`
 
 `style.apply(root)` installs the dark ttk theme for every ttk widget in the process. Use these named styles instead of passing colors directly:
 
@@ -28,7 +28,7 @@ Colors, fonts, spacing and sizes live only in `theme.py`. **Never hard-code a co
 
 `style.dark_titlebar(win)` makes Windows draw the native title bar dark.
 
-## Components: `gpuwatch/components.py`
+## Components: `perch/components.py`
 
 | Need | Use | Never |
 |---|---|---|

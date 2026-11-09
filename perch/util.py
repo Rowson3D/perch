@@ -12,7 +12,7 @@ DETACHED = 0x00000008 if IS_WIN else 0  # DETACHED_PROCESS
 _mutex = None
 
 
-def single_instance(name="Local\\GpuWatchWidget"):
+def single_instance(name="Local\\PerchWidget"):
     """Return False if another copy of the widget is already running."""
     global _mutex
     if not IS_WIN:

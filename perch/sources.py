@@ -14,15 +14,15 @@ import subprocess
 import urllib.error
 import urllib.request
 
-from gpuwatch.util import NO_WINDOW
+from perch.util import NO_WINDOW
 
 GPU_QUERY = "index,uuid,name,memory.used,memory.total,utilization.gpu,temperature.gpu"
 PROC_QUERY = "gpu_uuid,pid,process_name,used_memory"
 FMT = "--format=csv,noheader,nounits"
 AGENT_PORT, SSH_PORT, TIMEOUT = 9123, 22, 5
-SEP = "__GPUWATCH_SEP__"
+SEP = "__PERCH_SEP__"
 
-METHODS = {"agent": "GPU Watch agent (HTTP)", "ssh": "SSH (key login)", "local": "This PC"}
+METHODS = {"agent": "Perch agent (HTTP)", "ssh": "SSH (key login)", "local": "This PC"}
 METHOD_KEYS = {v: k for k, v in METHODS.items()}
 
 _HTTP = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # LAN: never use a system proxy

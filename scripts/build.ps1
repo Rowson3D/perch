@@ -1,4 +1,4 @@
-﻿# Builds dist\GpuWatch.exe (widget + its own installer) and dist\gpu-agent.exe.
+﻿# Builds dist\Perch.exe (widget + its own installer) and dist\perch-agent.exe.
 #   powershell -ExecutionPolicy Bypass -File scripts\build.ps1
 param([string]$Python = "python")
 $ErrorActionPreference = 'Stop'
@@ -16,10 +16,10 @@ Run $py -m unittest discover -s tests
 Run $py scripts\make_assets.py
 
 Run $py -m PyInstaller --noconfirm --clean --log-level WARN --onefile --windowed `
-    --name GpuWatch --icon build\gpuwatch.ico --version-file build\version_gpuwatch.txt `
-    --paths . --hidden-import pystray._win32 gpuwatch\__main__.py
+    --name Perch --icon build\perch.ico --version-file build\version_perch.txt `
+    --paths . --hidden-import pystray._win32 perch\__main__.py
 Run $py -m PyInstaller --noconfirm --log-level WARN --onefile --console `
-    --name gpu-agent --icon build\gpuwatch.ico --version-file build\version_agent.txt `
-    agent\gpu_agent.py
+    --name perch-agent --icon build\perch.ico --version-file build\version_agent.txt `
+    agent\perch_agent.py
 
 Get-ChildItem dist\*.exe | ForEach-Object { "{0,-16} {1,8:N1} MB" -f $_.Name, ($_.Length / 1MB) }

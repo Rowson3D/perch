@@ -25,7 +25,7 @@ jobs:
       - name: Unit tests
         run: python -m unittest discover -s tests -v
       - name: Agent compiles on Python 3.8+ syntax
-        run: python -m py_compile agent/gpu_agent.py
+        run: python -m py_compile agent/perch_agent.py
 
   windows:
     needs: test
@@ -40,7 +40,7 @@ jobs:
         run: ./scripts/build.ps1
       - uses: actions/upload-artifact@v4
         with:
-          name: gpu-watch-windows
+          name: perch-windows
           path: dist/*.exe
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -49,6 +49,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: >
           gh release create $env:GITHUB_REF_NAME
-          dist/GpuWatch.exe dist/gpu-agent.exe
-          agent/gpu_agent.py agent/install_agent_linux.sh agent/install_agent_windows.ps1
-          --title "GPU Watch $env:GITHUB_REF_NAME" --generate-notes
+          dist/Perch.exe dist/perch-agent.exe
+          agent/perch_agent.py agent/install_agent_linux.sh agent/install_agent_windows.ps1
+          --title "Perch $env:GITHUB_REF_NAME" --generate-notes

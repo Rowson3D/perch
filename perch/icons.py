@@ -2,7 +2,7 @@
 
 from PIL import Image, ImageDraw
 
-from gpuwatch import theme as T
+from perch import theme as T
 
 COLORS = {"free": T.GREEN, "busy": T.RED, "held": T.AMBER, "unknown": T.MUTED}
 HEIGHTS = (0.50, 0.80, 0.38)
