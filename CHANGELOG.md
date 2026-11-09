@@ -1,84 +1,55 @@
 # Changelog
 
-All notable changes to Perch are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). Each section below is also published as the notes of its GitHub release.
+Changes to Perch, newest first. Versions follow [Semantic Versioning](https://semver.org/). Each section here is also used as the notes for that version's GitHub release.
 
 ## [0.2.0] - 2026-11-09
 
-The first public release of **Perch**: discreet, customizable desktop cards that keep watch for you. You can see which GPUs on your machines are free, and whether your websites are up, without opening a single dashboard.
+First public release. Perch puts small cards on your Windows desktop that show whether your GPUs are free and whether your websites are up.
 
 ![GPU and Sites cards on the desktop](https://raw.githubusercontent.com/Rowson3D/perch/main/docs/cards.png)
 
-### Highlights
+### New: Sites card
 
-- **Sites card:** uptime, response time, and SSL and domain expiry for the websites you host and manage.
-- **GPU card:** free, in use or held, across any number of machines, including who's using each GPU.
-- **Your perch:** hatch new cards from a gallery, tweak them, hide them, or let them fly away.
-- **One consistent dark design** across every card, dialog and menu.
-
-### Sites card
-
-- **Up or down:** each site is checked every minute (adjustable). It only counts as **down** after 2 failed checks in a row, so a single blip never alerts you.
-- **Response time:** a live response-time graph, with failed checks marked in red.
-- **Uptime %** for 24 hours, 7 days and 30 days, kept between restarts.
-- **Expiry warnings:**
-  - days left on the **SSL certificate** and the **domain registration** (the domain date comes from the registry, via RDAP);
-  - an amber and then red badge as either gets close.
-- **"Must contain" check:** catches a broken deploy that still returns status 200.
-- **Notifications:** when a site goes down, when it recovers (with how long it was out), and before a certificate or domain lapses.
-- **Shortcuts:**
-  - double-click to open a site;
-  - right-click to open its admin page or repository, check it now, or pause checks.
-- **Hover a site** for the full picture: status code, uptime, average response time, SSL issuer and expiry, domain registrar and expiry, and the last outage.
+- Checks each of your sites every minute. A site is marked down after 2 failed checks in a row.
+- Shows response time with a graph of the last hour, and uptime over 24 hours, 7 days and 30 days.
+- Shows days left on the SSL certificate and the domain registration, and warns you before either runs out.
+- Optional text to look for on the page, so a broken page that still returns a 200 counts as down.
+- Notifies you when a site goes down, when it comes back, and when a certificate or domain is close to expiring.
+- Double-click a site to open it. Right-click it for its admin page, its repo, check now, or pause.
 
 ### GPU card
 
-- **Any number of machines,** reached three ways:
-  - the Perch **agent**;
-  - **SSH** (nothing to install on the machine);
-  - **This PC**.
-- **Smart "in use" detection:**
-  - a **VRAM threshold**;
-  - **utilization averaged over time**, so one spike doesn't flip the state;
-  - a **HELD** state for memory that's reserved while the GPU sits idle;
-  - a dead zone so GPUs don't flicker between states.
-- **Who's using it:** hover a GPU to see its processes, users and memory.
-- **History graphs** of VRAM and utilization.
-- **"Notify me when free":** right-click a busy GPU to get a notification when it frees up.
+- Shows which NVIDIA GPUs on your machines are free, in use or held.
+- Connects through the Perch agent, over SSH, or directly for this PC.
+- A GPU is in use when its VRAM is over a threshold or its utilization has been high. It's held when the VRAM is taken but the GPU has been idle for a while.
+- Hover over a GPU to see its processes and users. Right-click a busy one to get notified when it frees up.
 
-### Cards, everywhere
+### Cards
 
-- **Each card is its own floating window,** with its own title, opacity and always-on-top setting. Cards snap to screen edges and to each other.
-- **Your perch** shows every card as a tile with its live status. The **hatch gallery** walks you through a quick setup: for Sites, just paste your addresses.
-- **The tray icon** shows the worst status across all cards (green, amber or red), and its tooltip summarises them all.
-- **Have as many cards as you like,** e.g. one Sites card for client work and another for your own projects.
+- Every card is its own window, with its own title, opacity and always-on-top setting. Cards snap to the screen edges and to each other.
+- **Your perch** lists your cards. From there you can add new ones, change their settings, hide them, or remove them.
+- The tray icon turns green, amber or red depending on the worst status across your cards.
 
 ### Install
 
-1. Download **`Perch.exe`** below.
-2. Run it and click **Install**.
+Download `Perch.exe` below, run it and click **Install**. It installs for your user only, so no admin rights are needed.
 
-Perch installs just for you, with no admin rights needed. It adds a Start-menu entry and an entry in **Settings → Apps**, and can start with Windows.
+The exe isn't code-signed yet, so SmartScreen may warn you the first time. Click **More info**, then **Run anyway**.
 
-> Windows SmartScreen may warn about an unrecognized app because the exe isn't code-signed yet. Click **More info → Run anyway**.
+If you have GPU Watch installed, Perch replaces it and keeps your machines and settings.
 
-- **Without installing:** click **Just run it**, or start it with `Perch.exe --portable`.
-- **Scripted installs:** `Perch.exe --install [--no-autostart] [--desktop] [--no-launch]`.
+### Agent for GPU machines
 
-### Upgrading from GPU Watch
+You only need the agent for machines you don't want to reach over SSH.
 
-Perch replaces earlier GPU Watch builds automatically. It removes the old startup entry, shortcuts and files, and carries your machines and settings over as a GPU card.
-
-### Watching GPUs on other machines (optional)
-
-| Machine | Download | Set up |
+| Machine | Files | How to install |
 |---|---|---|
-| Windows | `perch-agent.exe` + `install_agent_windows.ps1` | run the script from an Administrator PowerShell |
-| Linux | `perch_agent.py` + `install_agent_linux.sh` | `sudo ./install_agent_linux.sh` |
-| Any machine you can SSH into | nothing | choose **SSH** when adding the machine |
+| Windows | `perch-agent.exe`, `install_agent_windows.ps1` | run the script from an Administrator PowerShell |
+| Linux | `perch_agent.py`, `install_agent_linux.sh` | `sudo ./install_agent_linux.sh` |
 
-The agent is read-only and only reports GPU stats and process names. Run it on a trusted network, or use SSH for machines reachable over the internet.
+The agent only reports GPU stats and has no password, so keep it on a network you trust.
 
 ### Requirements
 
-- Windows 10 or 11 (64-bit) for the app.
-- An NVIDIA driver with `nvidia-smi` on GPU machines.
+- Windows 10 or 11, 64-bit.
+- GPU machines need the NVIDIA driver, which includes `nvidia-smi`.

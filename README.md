@@ -1,191 +1,147 @@
 # Perch
 
-**Discreet, customizable desktop cards for your machines and websites.** Perch sits quietly on your Windows desktop and keeps watch. Each card is its own small floating window: put it anywhere, style it, hide it, or hatch another.
+Perch puts small cards on your Windows desktop that show whether your GPUs are free and whether your websites are up. Each card is its own window. You can move it, hide it, change its opacity, or add more cards.
 
 ![GPU and Sites cards on the desktop](docs/cards.png)
 
-## Cards
+## Sites card
 
-### Sites
+Add the websites you look after, and the card checks each one every minute.
 
-Your websites at a glance.
+- A site is marked down only after 2 failed checks in a row, so a single hiccup doesn't set it off.
+- Each row shows the response time and a graph of the last hour. Failed checks show up as red marks.
+- It shows how many days are left on the SSL certificate and the domain registration, and warns you when either is getting close. Domain dates come from the registry using RDAP.
+- You can give a site some text that has to be on the page. If it's missing, the site counts as down. This catches broken deploys that still return a 200.
+- You get a Windows notification when a site goes down, when it comes back, and when a certificate or domain is about to expire.
+- Double-click a site to open it. Right-click it to open its admin page or repo, check it now, or pause it.
+- Hover over a site to see its uptime over 24 hours, 7 days and 30 days, its average response time, SSL and domain details, and the last outage.
 
-- **Up or down.** Each site is checked every minute (adjustable). It only counts as **down** after 2 failed checks in a row, so a single blip won't alert you.
-- **Response time** with a graph, plus **uptime %** for 24 hours, 7 days and 30 days.
-- **SSL certificate and domain expiry.** Perch shows the days left and warns you before either lapses. Domain dates come from the registry (RDAP).
-- **"Must contain" check.** A site also counts as down if a phrase you choose is missing from the page, e.g. when a broken deploy serves an error page with status 200.
-- **Notifications:** when a site goes down, when it comes back (with how long it was out), and when its certificate or domain is about to expire.
-- **Shortcuts:**
-  - Double-click a site to open it.
-  - Right-click it to open its **admin page** or **repository**, check it now, or pause checks.
-- **Hover a site** to see the full picture: status code, uptime, response time, SSL issuer and expiry, domain registrar and expiry, and the last outage.
+## GPU card
 
-### GPUs
+Shows which NVIDIA GPUs on your machines are free, in use or held.
 
-Which NVIDIA GPUs across your machines are **free**, **in use**, or **held**.
+You can add as many machines as you want and choose which GPUs to show from each. Perch can reach a machine in three ways:
 
-- **Any number of machines.** Add a machine by IP or hostname and pick which of its GPUs to show.
-- **Three ways to connect:**
-  - **Agent:** a tiny read-only HTTP service on the GPU machine (Linux or Windows).
-  - **SSH:** nothing to install on the remote machine; it uses your existing SSH key.
-  - **This PC:** your local GPUs.
-- **Smart "in use" detection:**
-  - **VRAM threshold** (default 50%).
-  - **GPU utilization**, averaged over a time window so a single spike doesn't flip the state.
-  - **HELD state:** VRAM is reserved but the GPU has been idle for a while, e.g. a forgotten notebook or a PyTorch cache.
-  - **Dead zone** so a GPU sitting right at a threshold doesn't flicker between states.
-- **Who's using it.** Hover a GPU to see its processes, their users, and how much memory each holds.
-- **History graphs** of VRAM use (filled) and utilization (line).
-- **"Notify me when free."** Right-click a busy GPU to get a Windows notification when it frees up.
+- through the Perch agent, a small read-only service you run on the machine;
+- over SSH, with nothing to install;
+- directly, for the PC Perch is running on.
+
+A GPU counts as in use when its VRAM is over a threshold (50% by default) or its utilization has been high for the last minute. It's marked held when the VRAM is taken but the GPU has been idle for 10 minutes, which usually means a notebook or cached model someone forgot about. Near a threshold, a small buffer stops a GPU from flipping back and forth between states.
+
+Hover over a GPU to see which processes and users are on it. Right-click a busy GPU and Perch will notify you when it frees up.
 
 ![GPU hover details](docs/widget_tip.png)
 
-## Your perch: hatching and managing cards
+## Adding and removing cards
 
-Open **Your perch** from the tray icon or any card's **⋯** menu. Every card on your desktop is shown as a tile with its live status, and from there you can open its **Settings**, **Hide** or **Show** it, or let it **Fly away** (remove it; it floats off your desktop).
+Open **Your perch** from the tray icon or from a card's **⋯** menu. It lists every card with its current status. From there you can open a card's settings, hide or show it, or remove it ("fly away").
 
-The dashed **Hatch a new card** tile opens the gallery:
+To add a card, click **Hatch a new card**, pick a type, give it a name and click **Hatch**. For a Sites card you can paste your addresses right there, one per line. You can have as many cards as you want, for example one for client sites and one for your own.
 
-1. Pick a card type.
-2. Name it.
-3. Do the quick setup, e.g. paste your site addresses, one per line.
-4. Click **Hatch**. The card drops onto your desktop.
-
-You can have as many cards as you like, e.g. one Sites card for clients and another for your own projects. **This PC**, **GitHub** and a **build-your-own card** builder are coming next.
-
-## Everywhere in Perch
-
-- **Discreet:**
-  - Borderless cards that snap to screen edges and to each other.
-  - Per-card opacity and always-on-top.
-  - Hide any card in one click.
-- **Tray icon:**
-  - It shows the worst status across all your cards: **green** when all is well, **amber** for warnings (e.g. an SSL certificate expiring soon, or every GPU busy), **red** when something is down.
-  - Its tooltip summarises every card.
-- **One consistent look.** Every window, menu and dialog uses the same dark [design system](docs/design-system.md).
-- **Proper install.** A single exe that installs per-user with no admin rights. It adds a Start-menu entry, an Add/Remove Programs entry and optional start-with-Windows, and updates in place.
+The tray icon is green when everything is fine, amber when something needs attention soon (like a certificate about to expire, or every GPU being busy), and red when something is down. Hover over it for a summary.
 
 ## Install
 
-1. Download **`Perch.exe`** from the [latest release](https://github.com/Rowson3D/perch/releases/latest).
+1. Download `Perch.exe` from the [latest release](https://github.com/Rowson3D/perch/releases/latest).
 2. Run it and click **Install**.
 
-> Windows SmartScreen may warn about an unrecognized app because the exe isn't code-signed. Click **More info → Run anyway**.
+It installs for your user only, so you don't need admin rights. It adds a Start menu shortcut and an entry in Installed apps, and it can start with Windows.
 
-Other options:
+The exe isn't code-signed yet, so Windows SmartScreen may warn you the first time. Click **More info**, then **Run anyway**.
 
-- **Without installing:** click **Just run it**, or start it with `Perch.exe --portable`.
-- **Silent install:** `Perch.exe --install [--no-autostart] [--desktop] [--no-launch]`.
-- **Upgrading from GPU Watch:** Perch removes the old install automatically and keeps your machines and settings.
+To use it without installing, click **Just run it**, or start it with `Perch.exe --portable`. For a silent install, use `Perch.exe --install` with `--no-autostart`, `--desktop` or `--no-launch` as needed.
 
-## Adding machines
+If you used GPU Watch before, Perch removes it and keeps your machines and settings.
 
-Click **+** on a GPU card (or right-click it → *Add machine…*). Then:
+## Adding GPU machines
 
-1. Choose how to connect.
-2. Enter the IP or hostname.
-3. Click **Find GPUs**.
-4. Tick the GPUs you want, then click **Add**.
+Click **+** on a GPU card. Choose how to connect, enter the IP or hostname, click **Find GPUs**, tick the ones you want, and click **Add**.
 
-| Connect via | Use it for | Needs |
+| Connect via | Use it for | What it needs |
 |---|---|---|
-| **This PC** | the GPUs in the computer running Perch | nothing |
-| **SSH** | Linux boxes, cloud VMs (AWS, GCP, Azure, RunPod, Lambda…), anything you can already `ssh` into | key-based login, so `ssh user@host` works without a password prompt |
-| **Agent** | machines where you'd rather not use SSH, including Windows GPU boxes | the Perch agent running on that machine (port 9123) |
+| This PC | the computer Perch is running on | nothing |
+| SSH | Linux machines, cloud servers, anything you can already `ssh` into | key-based login, so `ssh user@host` works without a password prompt |
+| Agent | machines where you don't want to use SSH, including Windows | the Perch agent running on port 9123 |
 
 ### Installing the agent
 
-**Linux** (installs a systemd service that starts on boot):
+On Linux, this installs it as a service that starts on boot:
 
 ```bash
 sudo ./install_agent_linux.sh          # optional: port number, default 9123
-curl http://localhost:9123/gpus         # check it
+curl http://localhost:9123/gpus         # check it's running
 ```
 
-**Windows**: put `perch-agent.exe` and `install_agent_windows.ps1` in one folder, then run this from an **Administrator** PowerShell:
+On Windows, put `perch-agent.exe` and `install_agent_windows.ps1` in the same folder and run this from an Administrator PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install_agent_windows.ps1
 ```
 
-This adds a startup task and a firewall rule for private and domain networks.
+That adds a startup task and opens the port on private and domain networks.
 
-The agent is read-only. It only reports GPU stats and process names, and it can't change anything. It has no authentication, so run it on a trusted network, or use **SSH** for machines reachable over the internet.
+The agent only reports GPU stats and process names. It can't change anything, but it has no password either, so only run it on a network you trust. For machines on the internet, use SSH instead.
 
-## How a GPU's state is decided
+## GPU states
 
 | State | Meaning |
 |---|---|
-| 🟢 **FREE** | VRAM is below the threshold *and* average utilization is low |
-| 🔴 **IN USE** | VRAM is at or above the threshold, *or* average utilization is high |
-| 🟡 **HELD** | VRAM is at or above the threshold, but utilization has been ~0% for the "held" period |
-| ⚪ offline | the machine couldn't be reached (the reason is shown on the card) |
+| FREE | VRAM is under the threshold and utilization is low |
+| IN USE | VRAM is over the threshold, or utilization has been high |
+| HELD | VRAM is over the threshold, but the GPU has been idle for the held period |
+| offline | the machine couldn't be reached; the card shows why |
 
-All thresholds and time windows are in the card's **Settings** (right-click the card).
+You can change the thresholds and time windows in the card's settings.
 
-## Using it
+## Tips
 
-- **Drag** anywhere on a card to move it. It snaps to screen edges and to other cards.
-- **Hover** a row for its full details.
-- **Right-click** a row for its actions (notify when free, open site, check now…).
-- **Right-click** anywhere else on a card, or click **⋯**, for the card menu.
-- **+** adds a machine or site to that card. **–** hides the card.
-- **Click the tray icon** to show or hide all cards.
+- Drag a card anywhere. It snaps to the edges of the screen and to other cards.
+- Right-click a row for things you can do with it. Right-click anywhere else on a card, or click **⋯**, for the card's menu.
+- **+** adds a machine or site to the card, and **–** hides the card.
+- Click the tray icon to show or hide all cards.
 
-Settings are stored in `%APPDATA%\Perch\config.json`, and site history in `%APPDATA%\Perch\state\`.
+Settings are saved in `%APPDATA%\Perch\config.json`, and site history in `%APPDATA%\Perch\state\`.
 
 ## Uninstall
 
-Use **Settings → Apps → Installed apps → Perch → Uninstall**, or run `Perch.exe --uninstall`. It asks whether to keep your saved machines.
+Go to Settings → Apps → Installed apps → Perch → Uninstall, or run `Perch.exe --uninstall`. It asks whether you want to keep your saved machines and sites.
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Each version's section is also published as its GitHub release notes, with SHA-256 checksums of the downloads.
+See [CHANGELOG.md](CHANGELOG.md). Each version's section is also used as the notes for its GitHub release.
 
-## Roadmap
+## Planned
 
-- **More cards:** This PC (CPU, RAM, disk, network), GitHub (builds and pull requests), Docker.
-- **Build your own card:** make a card from a website, a JSON API or a script, either visually or in a few lines of Python.
-- **More customization:** desktop-layer mode, click-through, auto-hide while a fullscreen app or game is running, and saved layouts.
+- More card types: this PC's CPU, memory, disk and network; GitHub builds and pull requests; Docker.
+- A way to make your own card from a website, an API or a script.
+- More display options: sitting behind your windows, click-through, hiding while a game is fullscreen, and saved layouts.
 
 ## Adding a card type
 
-A card is one class in `perch/cards/`:
+Each card type is one class in `perch/cards/`. Subclass `Card` from `perch/cards/base.py`, implement `render`, `update_view`, `start`, `status`, `menu_items` and `settings_rows`, then register it in `perch/cards/__init__.py`.
 
-1. Subclass `Card` from `perch/cards/base.py`.
-2. Implement `render`, `update_view`, `start`, `status`, `menu_items` and `settings_rows`.
-3. Register the class in `perch/cards/__init__.py`.
-
-The window, dragging and snapping, menus, settings window, hover details and animations all come from the base class and the shared components, so a new card automatically looks and behaves like the others.
+The base class handles the window, dragging, menus, the settings window and hover details, so a new card looks and works like the others. The colors, fonts and shared components are described in [docs/design-system.md](docs/design-system.md).
 
 ## Building from source
 
-Requires Windows and Python 3.10+.
+You need Windows and Python 3.10 or newer.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build.ps1
 ```
 
-The script:
+This sets up `.venv`, runs the linter and tests, and builds `dist\Perch.exe` and `dist\perch-agent.exe` with PyInstaller.
 
-1. creates `.venv` and installs the project with its build and dev extras;
-2. lints with ruff and runs the tests;
-3. builds `dist\Perch.exe` and `dist\perch-agent.exe` with PyInstaller.
-
-To run from source without building:
+To run it from source:
 
 ```powershell
 pip install -e ".[dev]"
 python -m perch
 ```
 
-The code follows ruff's lint and format rules (`ruff check .`, `ruff format .`). To release a new version:
+The code is checked with ruff (`ruff check .` and `ruff format .`).
 
-1. Bump `__version__` in `perch/__init__.py`.
-2. Add a section for it to `CHANGELOG.md`.
-3. Push a tag like `v0.2.1`.
-
-GitHub Actions then builds both executables and publishes the release, using that changelog section as its notes. The build fails if the changelog section is missing.
+To release a new version, bump `__version__` in `perch/__init__.py`, add a section for it to `CHANGELOG.md`, and push a tag like `v0.2.1`. GitHub Actions builds the exes and publishes the release with that section as its notes. If the section is missing, the build fails.
 
 ## License
 
