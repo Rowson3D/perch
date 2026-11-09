@@ -17,6 +17,8 @@ from perch.util import ago, clip
 SSL_EVERY = 6 * 3600
 DOMAIN_EVERY = 12 * 3600
 RETRY_ON_ERROR = 30 * 60
+TRAFFIC_EVERY = 15 * 60
+TRAFFIC_RETRY = 5 * 60
 GRAPH_H = 20
 STATUS_COLOR = {S.UP: T.GREEN, S.DOWN: T.RED, S.UNKNOWN: T.GREY, S.PAUSED: T.GREY}
 STATUS_DIM = {S.UP: T.GREEN_DIM, S.DOWN: T.RED_DIM, S.UNKNOWN: T.GREY_DIM, S.PAUSED: T.GREY_DIM}
@@ -53,12 +55,13 @@ class SitesCard(Card):
         "show_graph": True,
         "graph_minutes": 60,
         "compact": False,
+        "show_traffic": True,
     }
 
     def __init__(self, app, conf, animate=False):
         saved = C.load_state(conf["id"])
         self.monitors = {s["id"]: S.SiteMonitor(saved.get(s["id"])) for s in conf.get("settings", {}).get("sites", [])}
-        self.inflight, self.last_check, self.rows = set(), {}, {}
+        self.inflight, self.last_check, self.rows, self.traffic_inflight = set(), {}, {}, set()
         super().__init__(app, conf, animate)
 
     # ------------------------------------------------------------ data
@@ -109,7 +112,63 @@ class SitesCard(Card):
             self.inflight.add(sid)
             self.last_check[sid] = now
             self.app.pool.submit(self._job, dict(site), need_ssl, need_domain)
+        self._tick_traffic(now)
         self.after(2000, self.tick)
+
+    # ------------------------------------------------------------ visitor numbers
+    def _tick_traffic(self, now):
+        from perch import traffic as TR
+
+        accounts = {a["id"]: a for a in self.app.cfg.get("accounts", [])}
+        for site in self.sites:
+            sid = site["id"]
+            if "traffic" not in site:  # new site: link it to a connected account by its domain, once
+                found = next(
+                    ((a, s) for a in accounts.values() if (s := TR.match_source(site["url"], a.get("sources", [])))),
+                    None,
+                )
+                site["traffic"] = TR.link(found[1], found[0]["id"]) if found else None
+                self.app.save()
+            link = site.get("traffic")
+            if not link or sid in self.traffic_inflight:
+                continue
+            mon = self.monitor(sid)
+            if now - mon.traffic_checked < (TRAFFIC_RETRY if mon.traffic_error else TRAFFIC_EVERY):
+                continue
+            account = accounts.get(link.get("account"))
+            mon.traffic_checked = now
+            if not account:
+                mon.traffic_error = "its account was disconnected"
+                continue
+            self.traffic_inflight.add(sid)
+            self.app.pool.submit(self._traffic_job, sid, dict(account), dict(link))
+
+    def _traffic_job(self, sid, account, link):
+        from perch import traffic as TR
+
+        try:
+            out = (True, TR.fetch(account, link))
+        except Exception as e:  # noqa: BLE001
+            out = (False, str(e) or type(e).__name__)
+        self.app.call_soon(self.on_traffic, sid, out)
+
+    def on_traffic(self, sid, out):
+        if self.dead:
+            return
+        self.traffic_inflight.discard(sid)
+        mon = self.monitor(sid)
+        ok, val = out
+        if ok:
+            mon.traffic, mon.traffic_error = val, None
+        else:
+            mon.traffic_error = val
+        self.update_view()
+
+    def traffic_changed(self):
+        """An account was connected or removed, or a site's source changed: fetch again."""
+        for mon in self.monitors.values():
+            mon.traffic_checked = 0
+        self.update_view()
 
     def _job(self, site, need_ssl, need_domain):
         out = {"http": S.check_http(site["url"], site.get("keyword", ""))}
@@ -303,6 +362,8 @@ class SitesCard(Card):
                 return f"failing ({mon.fails}/{self.s['fail_after']})  ·  {last.get('error', '')}"
             return "checking…"
         bits = [f"{fmt_pct(mon.uptime(24, now))} 24h"]
+        if self.s.get("show_traffic", True) and mon.traffic and site.get("traffic"):
+            bits.append(f"{mon.traffic['today']['visitors']} today")
         if mon.ssl and not mon.ssl_error:
             bits.append(f"SSL {int(S.SiteMonitor.days_left(mon.ssl['expires'], now))}d")
         if mon.domain and mon.domain.get("expires"):
@@ -400,6 +461,13 @@ class SitesCard(Card):
                 lines.append(f"Domain    expires {fmt_date(mon.domain['expires'])} ({d} days){reg}")
             elif mon.domain_error:
                 lines.append(f"Domain    {clip(mon.domain_error, 48)}")
+        link = site.get("traffic")
+        if link and mon.traffic:
+            t = mon.traffic
+            lines.append(f"Visitors  today {t['today']['visitors']:<6}  7 days {t['week']['visitors']}")
+            lines.append(f"Views     today {t['today']['pageviews']:<6}  7 days {t['week']['pageviews']}")
+        elif link and mon.traffic_error:
+            lines.append(f"Visitors  {clip(mon.traffic_error, 48)}")
         if last.get("t"):
             lines.append(f"Checked   {ago(now - last['t'])} ago")
         add("\n".join(lines), T.FG, T.MONO, (6, 0))
@@ -409,6 +477,15 @@ class SitesCard(Card):
             took = ago((inc.get("end") or now) - inc["start"])
             still = "" if inc.get("end") else " (ongoing)"
             add(f"Last outage  {start} · {took}{still} · {clip(inc.get('reason', ''), 30)}", T.MUTED, T.FS, (8, 0))
+        if link:
+            from perch.traffic import PROVIDERS
+
+            add(
+                f"Visitor numbers from {PROVIDERS.get(link.get('provider'), '')} ({link.get('name', '')})",
+                T.MUTED,
+                T.FS,
+                (8, 0),
+            )
         add("Double-click: open site  ·  Right-click: admin, repo, check now", T.GREY, T.FS, (8, 0))
 
     # ------------------------------------------------------------ actions
@@ -429,7 +506,13 @@ class SitesCard(Card):
     def menu_items(self, m):
         m.command("Add site…", self.add_item)
         m.command("Manage sites…", self.open_manage)
+        m.command("Traffic accounts…", self.open_accounts)
         m.command("Check all now", self.refresh_now)
+
+    def open_accounts(self):
+        from perch.traffic_ui import open_accounts
+
+        open_accounts(self.app)
 
     def row_menu(self, e, sid):
         self.app.tip.hide()
@@ -465,6 +548,7 @@ class SitesCard(Card):
         else:
             self.sites.append(site)
         self.check_now(site["id"])
+        self.monitor(site["id"]).traffic_checked = 0
         self.sites_changed()
 
     def remove_site(self, sid, parent):
@@ -515,6 +599,7 @@ class SitesCard(Card):
         }
         v["show_graph"] = tk.BooleanVar(value=bool(s["show_graph"]))
         v["compact"] = tk.BooleanVar(value=bool(s["compact"]))
+        v["show_traffic"] = tk.BooleanVar(value=bool(s.get("show_traffic", True)))
 
         def line(r, *parts):
             fr = ttk.Frame(f)
@@ -541,6 +626,10 @@ class SitesCard(Card):
             "min",
         )
         line(row + 7, lambda fr: ttk.Checkbutton(fr, text="Compact rows (one line per site)", variable=v["compact"]))
+        line(
+            row + 8,
+            lambda fr: ttk.Checkbutton(fr, text="Show today's visitors on each row", variable=v["show_traffic"]),
+        )
 
         def commit():
             before = (s["show_graph"], s["compact"])
@@ -551,12 +640,13 @@ class SitesCard(Card):
             s["graph_minutes"] = int_of(v["graph_minutes"], 10, 1440, s["graph_minutes"])
             s["show_graph"] = bool(v["show_graph"].get())
             s["compact"] = bool(v["compact"].get())
+            s["show_traffic"] = bool(v["show_traffic"].get())
             if before != (s["show_graph"], s["compact"]):
                 self.render()
             else:
                 self.update_view()
 
-        return row + 8, commit
+        return row + 9, commit
 
 
 class SiteDialog(Dialog):
@@ -598,8 +688,36 @@ class SiteDialog(Dialog):
             row=9, column=0, columnspan=3, sticky="w", pady=2
         )
 
+        section(f, 10, "Visitors")
+        from perch import traffic as TR
+        from perch.traffic_ui import source_label, sources_of
+
+        self.sources = sources_of(card.app)
+        labels = ["None"] + [source_label(a, src) for a, src in self.sources]
+        current = s.get("traffic")  # a new site gets one picked as its address is typed (see _auto_source)
+        pick = "None"
+        for (a, src), lab in zip(self.sources, labels[1:], strict=True):
+            if (
+                current
+                and a["id"] == current.get("account")
+                and src.get("project", src.get("zone")) == current.get("project", current.get("zone"))
+            ):
+                pick = lab
+        self.v_traffic = tk.StringVar(value=pick)
+        self.cb_traffic = ttk.Combobox(f, textvariable=self.v_traffic, values=labels, state="readonly")
+        form_row(f, 11, "From", self.cb_traffic)
+        if not self.sources:
+            ttk.Label(
+                f,
+                text="Connect Vercel or Cloudflare from the card menu (Traffic accounts…) to see visitors.",
+                style="Hint.TLabel",
+                wraplength=360,
+            ).grid(row=12, column=0, columnspan=3, sticky="w")
+        self._labels, self._TR = labels, TR
+        self.v["url"].trace_add("write", lambda *a: self._auto_source())
+
         test = ttk.Frame(f)
-        test.grid(row=10, column=0, columnspan=3, sticky="ew", pady=(T.SECTION, 0))
+        test.grid(row=13, column=0, columnspan=3, sticky="ew", pady=(T.SECTION, 0))
         self.btn_test = ttk.Button(test, text="Test now", command=self.test)
         self.btn_test.pack(side="left")
         self.status = ttk.Label(test, text="", style="Muted.TLabel", wraplength=280, justify="left")
@@ -612,6 +730,16 @@ class SiteDialog(Dialog):
 
     def set_status(self, text, kind="Muted"):
         self.status.config(text=text, style=f"{kind}.TLabel")
+
+    def _auto_source(self):
+        """While typing a new site's address, pick the matching project/zone if nothing was chosen yet."""
+        if self.site or self.v_traffic.get() != "None":
+            return
+        url = S.normalize_url(self.v["url"].get())
+        for (_account, src), lab in zip(self.sources, self._labels[1:], strict=True):
+            if url and self._TR.match_source(url, [src]):
+                self.v_traffic.set(lab)
+                return
 
     def collect(self):
         url = S.normalize_url(self.v["url"].get())
@@ -669,5 +797,10 @@ class SiteDialog(Dialog):
         base["name"] = data["name"] or S.hostname(data["url"])
         base["check_ssl"] = bool(self.v_ssl.get())
         base["check_domain"] = bool(self.v_domain.get())
+        choice = self.v_traffic.get()
+        base["traffic"] = None
+        for (a, src), lab in zip(self.sources, self._labels[1:], strict=True):
+            if lab == choice:
+                base["traffic"] = self._TR.link(src, a["id"])
         self.close()
         self.card.upsert_site(base)

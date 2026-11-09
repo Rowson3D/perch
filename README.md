@@ -1,6 +1,6 @@
 # Perch
 
-Perch puts small cards on your Windows desktop that show whether your GPUs are free and whether your websites are up. Each card is its own window. You can move it, hide it, change its opacity, or add more cards.
+Perch puts small cards on your Windows desktop that keep track of your machines and websites: whether your GPUs are free, whether your sites are up and how many people visited, when a long job finishes, and whether your Docker containers are running. Each card is its own window. You can move it, hide it, change its opacity, or add more cards.
 
 ![GPU and Sites cards on the desktop](docs/cards.png)
 
@@ -15,6 +15,15 @@ Add the websites you look after, and the card checks each one every minute.
 - You get a Windows notification when a site goes down, when it comes back, and when a certificate or domain is about to expire.
 - Double-click a site to open it. Right-click it to open its admin page or repo, check it now, or pause it.
 - Hover over a site to see its uptime over 24 hours, 7 days and 30 days, its average response time, SSL and domain details, and the last outage.
+
+### Visitor numbers
+
+If your sites are on Vercel or Cloudflare, Perch can show how many people visited them. Open **Traffic accounts** from the tray icon or the Sites card's menu, connect an account with an API token, and Perch matches each site to its Vercel project or Cloudflare zone by domain. Each row then shows today's visitors, and hovering shows visitors and page views for today and the last 7 days.
+
+- **Vercel:** create a token under Account Settings → Tokens. The project needs Web Analytics turned on.
+- **Cloudflare:** create a custom token with *Zone · Zone · Read* and *Zone · Analytics · Read*. Cloudflare counts unique visitors per day, so its 7-day number is a sum of daily visitors.
+
+Tokens are stored in Windows Credential Manager, not in Perch's settings file.
 
 ## GPU card
 
@@ -31,6 +40,22 @@ A GPU counts as in use when its VRAM is over a threshold (50% by default) or its
 Hover over a GPU to see which processes and users are on it. Right-click a busy GPU and Perch will notify you when it frees up.
 
 ![GPU hover details](docs/widget_tip.png)
+
+## Jobs card
+
+Tells you when something long-running finishes, like a render, a training run, an export or a big download, on this PC or any machine you've added.
+
+Click **+**, pick a machine, and Perch lists what's running there, busiest first. Pick the process to watch. You can wait for that one process to exit, or for every process with that name to exit (useful when a job starts several). You get a notification when it's done, with how long it ran. Finished jobs stay on the card until you dismiss them.
+
+## Docker card
+
+Shows the containers on your machines, grouped by machine: whether each one is running, its health check, how long it's been up, and its CPU and memory use. You get a notification when a container stops, starts restarting, or fails its health check, and again when it recovers. Right-click a container to hide it from the card.
+
+Docker machines need to be reachable over SSH (with your user allowed to run `docker`), or be this PC.
+
+## Machines
+
+Machines are shared between cards. Add one once under **Machines** in the tray menu (or from any card that needs one) and every card can use it. This PC is always available.
 
 ## Adding and removing cards
 

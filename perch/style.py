@@ -44,6 +44,17 @@ def _make_images(root):
             d.line(pts, fill=T.ON_ACCENT, width=round(2.2 * k * scale), joint="curve")
         return finish(img, n + gap, n)
 
+    def radio(fill, outline, dot):
+        gap = round(8 * scale)
+        img = Image.new("RGBA", ((n + gap) * k, n * k), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        s = n * k
+        d.ellipse([k, k, s - k - 1, s - k - 1], fill=fill, outline=outline, width=k)
+        if dot:
+            r = s * 0.2
+            d.ellipse([s / 2 - r, s / 2 - r, s / 2 + r, s / 2 + r], fill=T.ON_ACCENT)
+        return finish(img, n + gap, n)
+
     def knob(fill):
         img = Image.new("RGBA", (n * k, n * k), (0, 0, 0, 0))
         ImageDraw.Draw(img).ellipse([k, k, n * k - k - 1, n * k - k - 1], fill=fill)
@@ -63,6 +74,10 @@ def _make_images(root):
         "cb_on": checkbox(T.ACCENT, T.ACCENT, True),
         "cb_on_hover": checkbox(T.ACCENT_HOVER, T.ACCENT_HOVER, True),
         "cb_disabled": checkbox(T.SURFACE, T.BORDER, False),
+        "rb_off": radio(T.FIELD, T.TIP_BORDER, False),
+        "rb_hover": radio(T.HOVER, T.MUTED, False),
+        "rb_on": radio(T.ACCENT, T.ACCENT, True),
+        "rb_disabled": radio(T.SURFACE, T.BORDER, False),
         "knob": knob(T.ACCENT),
         "knob_hover": knob(T.ACCENT_HOVER),
         "trough": trough(),
@@ -271,6 +286,32 @@ def apply(root: tk.Misc) -> ttk.Style:
             )
         ],
     )
+    s.element_create(
+        "gw.Radiobutton.indicator",
+        "image",
+        img["rb_off"],
+        ("disabled", img["rb_disabled"]),
+        ("selected", img["rb_on"]),
+        ("active", img["rb_hover"]),
+        sticky="",
+    )
+    s.layout(
+        "TRadiobutton",
+        [
+            (
+                "Radiobutton.padding",
+                {
+                    "sticky": "nswe",
+                    "children": [
+                        ("gw.Radiobutton.indicator", {"side": "left", "sticky": ""}),
+                        ("Radiobutton.label", {"side": "left", "sticky": "w"}),
+                    ],
+                },
+            )
+        ],
+    )
+    s.configure("TRadiobutton", background=T.SURFACE, foreground=T.FG, padding=(0, 2))
+    s.map("TRadiobutton", background=[("active", T.SURFACE)])
     s.element_create("gw.Horizontal.Scale.trough", "image", img["trough"], border=(img["border"] // 2, 0), sticky="ew")
     s.element_create("gw.Horizontal.Scale.slider", "image", img["knob"], ("active", img["knob_hover"]), sticky="")
     s.layout(

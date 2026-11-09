@@ -233,6 +233,9 @@ class SiteMonitor:
         self.domain_error = saved.get("domain_error")
         self.domain_checked = saved.get("domain_checked", 0)
         self.notified = saved.get("notified", {})  # warning key -> day it was last sent
+        self.traffic = saved.get("traffic")  # {"today": {visitors, pageviews}, "week": {...}, "days": [...]}
+        self.traffic_error = saved.get("traffic_error")
+        self.traffic_checked = saved.get("traffic_checked", 0)
         if self.incidents and self.incidents[-1].get("end") is None:
             self.status = DOWN  # we quit while it was down; keep the open incident
 
@@ -249,6 +252,9 @@ class SiteMonitor:
             "domain_error": self.domain_error,
             "domain_checked": self.domain_checked,
             "notified": self.notified,
+            "traffic": self.traffic,
+            "traffic_error": self.traffic_error,
+            "traffic_checked": self.traffic_checked,
         }
 
     def record(self, result, fail_after=2, now=None):

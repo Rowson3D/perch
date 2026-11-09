@@ -24,7 +24,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "0.2.1"
+VERSION = "0.3.0"
 GPU_QUERY = "index,uuid,name,memory.used,memory.total,utilization.gpu,temperature.gpu"
 PROC_QUERY = "gpu_uuid,pid,process_name,used_memory"
 FMT = "--format=csv,noheader,nounits"
@@ -141,14 +141,88 @@ def read():
         return _cache["data"]
 
 
+_procs_lock = threading.Lock()
+_proc_objs = {}  # pid -> psutil.Process, so cpu_percent() can compare against the previous request
+
+
+def processes():
+    """Running processes for the Jobs card: [{pid, name, cmd, cpu (% of one core), mem (MB), user, started}]."""
+    try:
+        import psutil
+    except ImportError:
+        psutil = None
+    if psutil is None:
+        if os.name == "nt":
+            raise RuntimeError("process list needs psutil on Windows - use perch-agent.exe")
+        r = subprocess.run(
+            ["ps", "-eo", "pid=,etimes=,pcpu=,rss=,user:32=,args=", "--sort=-pcpu"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        now, out = time.time(), []
+        for line in r.stdout.splitlines()[:500]:
+            parts = line.split(None, 5)
+            if len(parts) < 6 or not parts[0].isdigit() or parts[5].startswith("["):
+                continue
+            pid, etimes, pcpu, rss, user, args = parts
+            exe = args.split()[0]
+            out.append(
+                {
+                    "pid": int(pid),
+                    "name": os.path.basename(exe) or exe,
+                    "cmd": args,
+                    "cpu": float(pcpu),
+                    "mem": int(rss) / 1024,
+                    "user": user,
+                    "started": now - int(etimes),
+                }
+            )
+        return out
+    out, seen = [], set()
+    with _procs_lock:
+        for p in psutil.process_iter(["pid", "name", "username", "create_time", "memory_info", "cmdline"]):
+            info = p.info
+            if not info["pid"]:
+                continue
+            seen.add(info["pid"])
+            cached = _proc_objs.get(info["pid"])
+            if cached is None or cached.info.get("create_time") != info.get("create_time"):
+                _proc_objs[info["pid"]] = cached = p
+            try:
+                cpu = cached.cpu_percent(None)
+            except Exception:
+                cpu = None
+            mem = info.get("memory_info")
+            out.append(
+                {
+                    "pid": info["pid"],
+                    "name": info.get("name") or "?",
+                    "cmd": " ".join(info.get("cmdline") or []) or info.get("name") or "",
+                    "cpu": cpu,
+                    "mem": mem.rss / 1048576 if mem else None,
+                    "user": (info.get("username") or "").split("\\")[-1] or None,
+                    "started": info.get("create_time"),
+                }
+            )
+        for pid in [pid for pid in _proc_objs if pid not in seen]:
+            del _proc_objs[pid]
+    return out
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path.split("?")[0] not in ("/", "/gpus"):
-            return self._send(404, {"error": "not found"})
+        path = self.path.split("?")[0]
+        base = {"host": socket.gethostname(), "agent": VERSION, "time": time.time()}
         try:
-            self._send(200, {"host": socket.gethostname(), "agent": VERSION, "time": time.time(), **read()})
+            if path in ("/", "/gpus"):
+                self._send(200, {**base, **read()})
+            elif path == "/processes":
+                self._send(200, {**base, "processes": processes()})
+            else:
+                self._send(404, {"error": "not found"})
         except Exception as e:  # noqa: BLE001
-            self._send(500, {"host": socket.gethostname(), "agent": VERSION, "error": str(e)})
+            self._send(500, {**base, "error": str(e)})
 
     def _send(self, code, payload):
         body = json.dumps(payload).encode()

@@ -23,6 +23,8 @@ class Tray:
             SEP,
             Item("All cards…", lambda: call(app.open_cards)),
             Item("Add a card…", lambda: call(app.open_add_card)),
+            Item("Machines…", lambda: call(app.open_machines)),
+            Item("Traffic accounts…", lambda: call(app.open_accounts)),
             Item("Refresh all", lambda: call(app.refresh_all)),
             SEP,
             Item(

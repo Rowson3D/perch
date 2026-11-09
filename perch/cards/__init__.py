@@ -1,9 +1,11 @@
 """Card types available in Perch. Add a new card by subclassing cards.base.Card and registering it here."""
 
+from perch.cards.docker import DockerCard
 from perch.cards.gpus import GpuCard
+from perch.cards.jobs import JobsCard
 from perch.cards.sites import SitesCard
 
-CARD_TYPES = {cls.TYPE: cls for cls in (SitesCard, GpuCard)}
+CARD_TYPES = {cls.TYPE: cls for cls in (SitesCard, GpuCard, JobsCard, DockerCard)}
 
 # Shown as "Soon" in the "Add a card" window.
 COMING_SOON = [

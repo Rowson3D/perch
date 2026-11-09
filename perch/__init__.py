@@ -1,6 +1,6 @@
 """Perch - small desktop cards that show whether your GPUs are free and your websites are up."""
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 APP_NAME = "Perch"
 APP_ID = "Perch"
 PUBLISHER = "Rowson3D"

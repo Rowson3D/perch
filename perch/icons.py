@@ -52,6 +52,21 @@ def card_icon(card_type, size=48):
         d.ellipse(
             [s * 0.72 - dot, s * 0.72 - dot, s * 0.72 + dot, s * 0.72 + dot], fill=T.GREEN, outline=T.FIELD, width=w
         )
+    elif card_type == "jobs":  # a stopwatch
+        r = s * 0.25
+        cy = c + s * 0.04
+        d.ellipse([c - r, cy - r, c + r, cy + r], outline=T.ACCENT, width=w)
+        d.line([c, cy - r - s * 0.02, c, cy - r - s * 0.09], fill=T.ACCENT, width=w)
+        d.line([c - s * 0.05, cy - r - s * 0.1, c + s * 0.05, cy - r - s * 0.1], fill=T.ACCENT, width=w)
+        d.line([c, cy, c + r * 0.55, cy - r * 0.5], fill=T.GREEN, width=w)
+        d.line([c, cy, c, cy - r * 0.7], fill=T.GREEN, width=w)
+    elif card_type == "docker":  # stacked containers
+        bw, bh = s * 0.17, s * 0.13
+        boxes = [(0.30, 0.56), (0.49, 0.56), (0.395, 0.40)]
+        for i, (x, y) in enumerate(boxes):
+            color = T.GREEN if i == 2 else T.ACCENT
+            d.rounded_rectangle([s * x, s * y, s * x + bw, s * y + bh], radius=s * 0.02, outline=color, width=w)
+        d.line([s * 0.24, s * 0.74, s * 0.76, s * 0.74], fill=T.MUTED, width=w)
     elif card_type == "pc":  # a monitor
         d.rounded_rectangle([s * 0.22, s * 0.25, s * 0.78, s * 0.62], radius=s * 0.04, outline=T.MUTED, width=w)
         d.line([c, s * 0.62, c, s * 0.72], fill=T.MUTED, width=w)

@@ -42,6 +42,8 @@ Colors, fonts, spacing and sizes live only in `theme.py`. **Never hard-code a co
 | Details on hover | `app.tip.show(key, card_win, row, build)` (a `HoverCard`) | a custom tooltip |
 | Form rows and sections | `form_row`, `section`, `spin`, `int_of` | ad-hoc grids |
 | Card header buttons | `icon_button(parent, "+", command)` | plain labels with clicks |
+| Choosing a machine | `MachinePicker` (dropdown plus **Add machine…**), from `machines_ui.py` | a custom list |
+| One of several options | `ttk.Radiobutton` (themed, drawn from the tokens) | stock radio buttons |
 | Motion | `fade_in` for a new card and `fade_out` for a removed one | instant pop-in or removal |
 
 ## Cards: `perch/cards/base.py`

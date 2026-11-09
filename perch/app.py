@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from perch import APP_NAME, icons, style
 from perch import config as C
+from perch import machines as M
 from perch.cards import CARD_TYPES
 from perch.components import HoverCard, Toast
 from perch.tray import Tray
@@ -19,6 +20,8 @@ LEVEL_RANK = {"bad": 3, "warn": 2, "ok": 1, None: 0}
 class App:
     def __init__(self, first_run=False):
         self.cfg = C.load_config()
+        if M.seed_from_gpu_cards(self.cfg):  # 0.3: machines became shared between cards
+            self.save()
         self.q = queue.Queue()
         self.pool = ThreadPoolExecutor(max_workers=16)
         self.cards, self.dialogs = {}, {}
@@ -152,6 +155,24 @@ class App:
         from perch.home import CardsWindow
 
         self.open_dialog("cards", lambda: CardsWindow(self))
+
+    def open_machines(self):
+        from perch.machines_ui import open_machines
+
+        open_machines(self)
+
+    def open_accounts(self):
+        from perch.traffic_ui import open_accounts
+
+        open_accounts(self)
+
+    def machines_changed(self):
+        d = self.dialogs.get("machines")
+        if d and d.win.winfo_exists():
+            d.refresh()
+        for card in self.cards.values():
+            if card.TYPE in ("jobs", "docker"):
+                card.render()
 
     def open_add_card(self):
         from perch.home import AddCardDialog

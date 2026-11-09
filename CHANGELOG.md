@@ -2,6 +2,35 @@
 
 Changes to Perch, newest first. Versions follow [Semantic Versioning](https://semver.org/). Each section here is also used as the notes for that version's GitHub release.
 
+## [0.3.0] - 2026-11-09
+
+### New: Jobs card
+
+- Watch a render, training run, export or anything else running on this PC or another machine, and get a notification when it finishes.
+- Pick the job from a list of what's running on the machine, busiest first.
+- Wait for one process to exit, or for every process with the same name to exit.
+
+### New: Docker card
+
+- Shows the containers on each machine: running or stopped, health check, uptime, CPU and memory.
+- Notifies you when a container stops, starts restarting or turns unhealthy, and when it recovers.
+- Works over SSH or on this PC.
+
+### New: visitor numbers on the Sites card
+
+- Connect a Vercel or Cloudflare account under **Traffic accounts**. Perch matches your sites to their project or zone by domain.
+- Each site shows today's visitors, and hovering shows visitors and page views for today and the last 7 days.
+- API tokens are stored in Windows Credential Manager.
+
+### Changed
+
+- Machines are now shared between cards and managed in one place (**Machines** in the tray menu). Machines from your GPU cards are added to the list automatically.
+- The Perch agent can now list running processes for the Jobs card. Update the agent on machines where you want to use it.
+
+### Install
+
+Download `Perch.exe` below and run it. If you already have Perch, click **Update**. Your cards and settings stay as they are.
+
 ## [0.2.1] - 2026-11-09
 
 ### Changed

@@ -121,9 +121,10 @@ def fetch_local():
     return {"host": socket.gethostname(), "gpus": gpus, "procs": procs}
 
 
-def fetch_ssh(addr, user="", port=None):
+def ssh_base(addr, user="", port=None):
+    """The ssh command line (minus the remote command) used for every SSH connection."""
     target = f"{user}@{addr}" if user else addr
-    base = [
+    return [
         "ssh",
         "-o",
         "BatchMode=yes",
@@ -135,6 +136,37 @@ def fetch_ssh(addr, user="", port=None):
         str(port or SSH_PORT),
         target,
     ]
+
+
+def run_ssh(addr, user, port, command, timeout=TIMEOUT + 15):
+    return _run(ssh_base(addr, user, port) + [command], timeout)
+
+
+def agent_get(addr, port, path):
+    """GET a JSON endpoint from the Perch agent, with friendly errors."""
+    hostpart = f"[{addr}]" if ":" in addr else addr
+    try:
+        with _HTTP.open(f"http://{hostpart}:{port or AGENT_PORT}{path}", timeout=TIMEOUT) as resp:
+            return json.load(resp)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise RuntimeError("this agent is too old for that - update it to the latest perch-agent") from None
+        try:
+            msg = json.load(e).get("error")
+        except Exception:
+            msg = None
+        raise RuntimeError(msg or f"HTTP {e.code}") from None
+    except urllib.error.URLError as e:
+        reason = e.reason
+        if isinstance(reason, ConnectionRefusedError) or "refused" in str(reason).lower():
+            raise RuntimeError("connection refused - is the agent running?") from None
+        raise RuntimeError(str(reason)) from None
+    except TimeoutError:
+        raise RuntimeError("timed out") from None
+
+
+def fetch_ssh(addr, user="", port=None):
+    base = ssh_base(addr, user, port)
     gpu_cmd = f"nvidia-smi --query-gpu={GPU_QUERY} {FMT}"
     full = (
         f"{gpu_cmd}; echo {SEP}; nvidia-smi --query-compute-apps={PROC_QUERY} {FMT}; "
@@ -155,23 +187,7 @@ def fetch_ssh(addr, user="", port=None):
 
 
 def fetch_agent(addr, port=None):
-    hostpart = f"[{addr}]" if ":" in addr else addr
-    try:
-        with _HTTP.open(f"http://{hostpart}:{port or AGENT_PORT}/gpus", timeout=TIMEOUT) as resp:
-            data = json.load(resp)
-    except urllib.error.HTTPError as e:
-        try:
-            msg = json.load(e).get("error")
-        except Exception:
-            msg = None
-        raise RuntimeError(msg or f"HTTP {e.code}") from None
-    except urllib.error.URLError as e:
-        reason = e.reason
-        if isinstance(reason, ConnectionRefusedError) or "refused" in str(reason).lower():
-            raise RuntimeError("connection refused - is the agent running?") from None
-        raise RuntimeError(str(reason)) from None
-    except TimeoutError:
-        raise RuntimeError("timed out") from None
+    data = agent_get(addr, port, "/gpus")
     return {"host": data.get("host"), "gpus": data.get("gpus") or [], "procs": data.get("procs") or []}
 
 
