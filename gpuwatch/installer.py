@@ -276,9 +276,7 @@ def run_setup_dialog():
         result["v"] = "portable"
         d.close()
 
-    buttons = d.buttons(
-        ("Just run it", do_portable, "secondary"), (_install_label(current), do_install, "primary")
-    )
+    buttons = d.buttons(("Just run it", do_portable, "secondary"), (_install_label(current), do_install, "primary"))
     w.bind("<Return>", lambda e: do_install())
     d.show(topmost=False)
     w.attributes("-topmost", True)
