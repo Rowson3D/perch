@@ -73,6 +73,19 @@ class CloudflareTests(unittest.TestCase):
             TR.parse_cloudflare({"errors": [{"message": "not authorized"}]})
 
 
+class NewVisitorTests(unittest.TestCase):
+    def test_counts_arrivals_since_last_check(self):
+        self.assertEqual(TR.new_visitors(40, "2026-11-10", 42, "2026-11-10"), 2)
+        self.assertEqual(TR.new_visitors(42, "2026-11-10", 42, "2026-11-10"), 0)
+
+    def test_nothing_on_first_check_or_new_day(self):
+        self.assertEqual(TR.new_visitors(None, None, 42, "2026-11-10"), 0)
+        self.assertEqual(TR.new_visitors(300, "2026-11-09", 3, "2026-11-10"), 0)
+
+    def test_never_negative(self):
+        self.assertEqual(TR.new_visitors(10, "2026-11-10", 8, "2026-11-10"), 0)
+
+
 class TimeTests(unittest.TestCase):
     def test_local_midnight(self):
         import datetime as dt

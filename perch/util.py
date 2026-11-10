@@ -102,6 +102,12 @@ def launch_detached(args):
         subprocess.Popen(args, creationflags=DETACHED | NEW_GROUP, **kwargs)
 
 
+def mix(a, b, t):
+    """Blend two #rrggbb colors: t=0 gives a, t=1 gives b."""
+    ca, cb = [int(a[i : i + 2], 16) for i in (1, 3, 5)], [int(b[i : i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join(f"{round(x + (y - x) * t):02x}" for x, y in zip(ca, cb, strict=True))
+
+
 def clip(s, n):
     s = " ".join(str(s).split())
     return s if len(s) <= n else s[: n - 1] + "…"

@@ -25,6 +25,8 @@ If your sites are on Vercel or Cloudflare, Perch can show how many people visite
 
 Tokens are stored in Windows Credential Manager, not in Perch's settings file.
 
+When someone new visits, a green **+1** pops up on that site and the row glows for a moment. It counts up as more people arrive, and clears when you hover over the site. The card's header shows the total, like "5/5 up · +3 new". Perch checks for new visitors every 2 minutes, and you can turn on a Windows notification for them in the card's settings. Vercel and Cloudflare can take a few minutes to report a visit.
+
 ## GPU card
 
 Shows which NVIDIA GPUs on your machines are free, in use or held.

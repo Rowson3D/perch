@@ -73,6 +73,17 @@ def _qs(params):
     return urllib.parse.urlencode({k: v for k, v in params.items() if v is not None}, doseq=True)
 
 
+def local_day(now=None):
+    return dt.datetime.fromtimestamp(now or time.time()).date().isoformat()
+
+
+def new_visitors(last_count, last_day, count, day):
+    """How many visitors arrived since the last check. Nothing on the first check or when a new day starts."""
+    if last_count is None or last_day != day:
+        return 0
+    return max(0, count - last_count)
+
+
 def local_midnight(days_ago=0, now=None):
     d = dt.datetime.fromtimestamp(now or time.time()).date() - dt.timedelta(days=days_ago)
     return dt.datetime.combine(d, dt.time()).timestamp()
@@ -160,10 +171,15 @@ class Vercel:
         now = now or time.time()
         p, t = source["project"], source.get("team")
         return {
+            "day": local_day(now),
             "today": self.count(p, t, local_midnight(0, now), now),
             "week": self.count(p, t, local_midnight(6, now), now),
             "days": self.daily(p, t, 7, now),
         }
+
+    def today(self, source, now=None):
+        now = now or time.time()
+        return {"day": local_day(now), **self.count(source["project"], source.get("team"), local_midnight(0, now), now)}
 
 
 # ------------------------------------------------------------------ Cloudflare
@@ -219,11 +235,16 @@ class Cloudflare:
         days = parse_cloudflare(_request(f"{CLOUDFLARE_API}/graphql", self.token, body))
         last = days[-1] if days and days[-1]["date"] == str(today) else {"visitors": 0, "pageviews": 0}
         return {
+            "day": str(today),  # Cloudflare days are UTC
             "today": {"visitors": last["visitors"], "pageviews": last["pageviews"]},
             # Cloudflare counts unique visitors per day, so the week is a sum of daily uniques
             "week": {"visitors": sum(d["visitors"] for d in days), "pageviews": sum(d["pageviews"] for d in days)},
             "days": days,
         }
+
+    def today(self, source, now=None):
+        s = self.stats(source, now)  # one GraphQL request either way
+        return {"day": s["day"], **s["today"]}
 
 
 # ------------------------------------------------------------------ accounts and matching
@@ -269,3 +290,8 @@ def link(source, account_id):
 
 def fetch(account, link_info, now=None):
     return client(account).stats(link_info, now)
+
+
+def fetch_today(account, link_info, now=None):
+    """Just today's numbers - the light, frequent check behind the "+1 new visitor" badge."""
+    return client(account).today(link_info, now)

@@ -236,6 +236,11 @@ class SiteMonitor:
         self.traffic = saved.get("traffic")  # {"today": {visitors, pageviews}, "week": {...}, "days": [...]}
         self.traffic_error = saved.get("traffic_error")
         self.traffic_checked = saved.get("traffic_checked", 0)
+        self.today_checked = 0
+        self.seen_count = saved.get("seen_count")  # today's visitor count at the last check
+        self.seen_day = saved.get("seen_day")
+        self.fresh = saved.get("fresh", 0)  # new visitors not yet looked at (the "+N" badge)
+        self.fresh_at = saved.get("fresh_at", 0)
         if self.incidents and self.incidents[-1].get("end") is None:
             self.status = DOWN  # we quit while it was down; keep the open incident
 
@@ -255,6 +260,10 @@ class SiteMonitor:
             "traffic": self.traffic,
             "traffic_error": self.traffic_error,
             "traffic_checked": self.traffic_checked,
+            "seen_count": self.seen_count,
+            "seen_day": self.seen_day,
+            "fresh": self.fresh,
+            "fresh_at": self.fresh_at,
         }
 
     def record(self, result, fail_after=2, now=None):

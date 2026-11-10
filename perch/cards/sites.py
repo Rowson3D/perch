@@ -12,7 +12,7 @@ from perch import theme as T
 from perch.cards.base import Card
 from perch.components import Dialog, ListManager, PopupMenu, alert, confirm, form_row, int_of, section, spin
 from perch.sitecheck import fmt_pct, new_site, sites_from_text  # noqa: F401 - re-exported
-from perch.util import ago, clip
+from perch.util import ago, clip, mix
 
 SSL_EVERY = 6 * 3600
 DOMAIN_EVERY = 12 * 3600
@@ -56,6 +56,10 @@ class SitesCard(Card):
         "graph_minutes": 60,
         "compact": False,
         "show_traffic": True,
+        "visitors_every": 2,  # minutes between the light "today" checks
+        "new_visitor_badge": True,
+        "badge_minutes": 60,
+        "notify_visitors": False,
     }
 
     def __init__(self, app, conf, animate=False):
@@ -133,21 +137,25 @@ class SitesCard(Card):
             if not link or sid in self.traffic_inflight:
                 continue
             mon = self.monitor(sid)
-            if now - mon.traffic_checked < (TRAFFIC_RETRY if mon.traffic_error else TRAFFIC_EVERY):
+            full = now - mon.traffic_checked >= (TRAFFIC_RETRY if mon.traffic_error else TRAFFIC_EVERY)
+            light = now - mon.today_checked >= max(1, int(self.s.get("visitors_every", 2))) * 60
+            if not (full or light):
                 continue
             account = accounts.get(link.get("account"))
-            mon.traffic_checked = now
+            mon.today_checked = now
+            if full:
+                mon.traffic_checked = now
             if not account:
                 mon.traffic_error = "its account was disconnected"
                 continue
             self.traffic_inflight.add(sid)
-            self.app.pool.submit(self._traffic_job, sid, dict(account), dict(link))
+            self.app.pool.submit(self._traffic_job, sid, dict(account), dict(link), full)
 
-    def _traffic_job(self, sid, account, link):
+    def _traffic_job(self, sid, account, link, full=True):
         from perch import traffic as TR
 
         try:
-            out = (True, TR.fetch(account, link))
+            out = (True, TR.fetch(account, link) if full else {"light": TR.fetch_today(account, link)})
         except Exception as e:  # noqa: BLE001
             out = (False, str(e) or type(e).__name__)
         self.app.call_soon(self.on_traffic, sid, out)
@@ -158,11 +166,63 @@ class SitesCard(Card):
         self.traffic_inflight.discard(sid)
         mon = self.monitor(sid)
         ok, val = out
-        if ok:
-            mon.traffic, mon.traffic_error = val, None
-        else:
+        if not ok:
             mon.traffic_error = val
+            self.update_view()
+            return
+        mon.traffic_error = None
+        if "light" in val:
+            light = val["light"]
+            day, count = light["day"], light["visitors"]
+            if mon.traffic:  # keep the 7-day numbers, update today's
+                mon.traffic["today"] = {"visitors": count, "pageviews": light["pageviews"]}
+        else:
+            mon.traffic = val
+            day, count = val.get("day"), val["today"]["visitors"]
+        self._count_new(sid, mon, count, day)
         self.update_view()
+
+    def _count_new(self, sid, mon, count, day):
+        from perch.traffic import new_visitors
+
+        n = new_visitors(mon.seen_count, mon.seen_day, count, day)
+        mon.seen_count, mon.seen_day = count, day
+        if not n or not self.s.get("new_visitor_badge", True):
+            return
+        mon.fresh += n
+        mon.fresh_at = time.time()
+        self.persist()
+        self.after(50, self.celebrate, sid)
+        if self.s.get("notify_visitors"):
+            site = self.site(sid)
+            self.notify(f"+{n} visitor{'s' * (n != 1)} on {site['name']}", f"{count} today so far.")
+
+    def clear_fresh(self, sid):
+        mon = self.monitor(sid)
+        if mon.fresh:
+            mon.fresh = 0
+            self.persist()
+            self.update_view()
+
+    def celebrate(self, sid):
+        """Make a new visitor noticeable: the +N badge pops, and the row glows green and fades back."""
+        from perch.components import animate
+
+        row = self.rows.get(sid)
+        if not row or not row["card"].winfo_exists():
+            return
+        badge, tinted = row["fresh"], row["tinted"]
+        sizes = (14, 13, 12, 11, 10, 9)
+
+        def step(t):
+            glow = mix(T.ROW, T.GREEN_DIM, 1 - t if t > 0.25 else 1)
+            for w in tinted:
+                if w.winfo_exists():
+                    w.configure(bg=glow)
+            if badge.winfo_exists():
+                badge.configure(font=(T.FONT_SEMI, sizes[min(len(sizes) - 1, int(t * len(sizes) * 1.6))]))
+
+        animate(row["card"], 1600, step, frames=32)
 
     def traffic_changed(self):
         """An account was connected or removed, or a site's source changed: fetch again."""
@@ -305,6 +365,7 @@ class SitesCard(Card):
         dot.pack(side="left", pady=(2, 0))
         name = tk.Label(top, text=clip(site["name"], 26), bg=T.ROW, fg=T.FG, font=T.F)
         name.pack(side="left", padx=(6, 0))
+        fresh = tk.Label(top, text="", bg=T.GREEN, fg=T.ON_ACCENT, font=T.FB, padx=5)
         ms = tk.Label(top, text="…", bg=T.ROW, fg=T.MUTED, font=T.FB)
         ms.pack(side="right")
         warn = tk.Label(top, text="", bg=T.ROW, fg=T.AMBER, font=T.FS)
@@ -317,12 +378,24 @@ class SitesCard(Card):
             detail = tk.Label(card, text="", bg=T.ROW, fg=T.MUTED, font=T.FS, anchor="w")
             detail.pack(fill="x")
         sid = site["id"]
+        tinted = [w for w in descendants(card) if w is not fresh and w.cget("bg") == T.ROW]
         for w in descendants(card):
             w.bind("<Enter>", lambda e, sid=sid, card=card: self._hover(sid, card), add="+")
             w.bind("<Leave>", lambda e: self.app.tip.hide_soon(), add="+")
             w.bind("<Button-3>", lambda e, sid=sid: self.row_menu(e, sid))
             w.bind("<Double-Button-1>", lambda e, sid=sid: self.open_url(sid, "url"))
-        return dict(card=card, dot=dot, dot_id=dot_id, name=name, ms=ms, warn=warn, graph=graph, detail=detail)
+        return dict(
+            card=card,
+            dot=dot,
+            dot_id=dot_id,
+            name=name,
+            ms=ms,
+            warn=warn,
+            graph=graph,
+            detail=detail,
+            fresh=fresh,
+            tinted=tinted,
+        )
 
     def update_view(self):
         now = time.time()
@@ -339,6 +412,14 @@ class SitesCard(Card):
                 row["ms"].config(text=f"{last['ms']:.0f} ms", fg=color)
             else:
                 row["ms"].config(text={S.DOWN: "DOWN", S.PAUSED: "paused"}.get(status, "…"), fg=color)
+            if mon.fresh and now - mon.fresh_at > int(self.s.get("badge_minutes", 60)) * 60:
+                mon.fresh = 0  # nobody looked for a while: let it go
+            if mon.fresh and self.s.get("new_visitor_badge", True):
+                row["fresh"].config(text=f"+{mon.fresh}")
+                if not row["fresh"].winfo_ismapped():
+                    row["fresh"].pack(side="left", padx=(6, 0), after=row["name"])
+            elif row["fresh"].winfo_ismapped():
+                row["fresh"].pack_forget()
             badges, level = self.warnings(site, mon, now)
             row["warn"].config(text="  ·  ".join(badges), fg=T.RED if level == "bad" else T.AMBER)
             if row["detail"] is not None:
@@ -346,7 +427,8 @@ class SitesCard(Card):
             if row["graph"] is not None:
                 self._draw_graph(row["graph"], mon, color, STATUS_DIM[status], now)
         level, text = self.status()
-        self.summary.config(text=text.replace(" sites", "") if text else "")
+        fresh = self.fresh_total()
+        self.summary.config(text=text.replace(" sites", "") if text else "", fg=T.GREEN if fresh else T.MUTED)
         self.app.cards_changed()
         if self.app.tip.key and self.app.tip.key[0] == self.id:
             self.app.tip.refresh()
@@ -410,10 +492,18 @@ class SitesCard(Card):
                 level = "warn"
             elif active and up == len(active):
                 level = "ok"
-        return level, f"{up}/{len(active)} sites up"
+        fresh = self.fresh_total()
+        return level, f"{up}/{len(active)} sites up" + (f" · +{fresh} new" if fresh else "")
 
     # ------------------------------------------------------------ hover details
+    def fresh_total(self):
+        if not self.s.get("new_visitor_badge", True):
+            return 0
+        return sum(self.monitor(s["id"]).fresh for s in self.sites)
+
     def _hover(self, sid, row_widget):
+        if self.monitor(sid).fresh:  # you've seen it: clear the badge shortly
+            self.after(2500, self.clear_fresh, sid)
         self.app.tip.show((self.id, sid), self.win, row_widget, lambda add: self._describe(sid, add))
 
     def _describe(self, sid, add):
@@ -600,6 +690,10 @@ class SitesCard(Card):
         v["show_graph"] = tk.BooleanVar(value=bool(s["show_graph"]))
         v["compact"] = tk.BooleanVar(value=bool(s["compact"]))
         v["show_traffic"] = tk.BooleanVar(value=bool(s.get("show_traffic", True)))
+        v["visitors_every"] = tk.StringVar(value=str(s.get("visitors_every", 2)))
+        v["badge_minutes"] = tk.StringVar(value=str(s.get("badge_minutes", 60)))
+        v["new_visitor_badge"] = tk.BooleanVar(value=bool(s.get("new_visitor_badge", True)))
+        v["notify_visitors"] = tk.BooleanVar(value=bool(s.get("notify_visitors", False)))
 
         def line(r, *parts):
             fr = ttk.Frame(f)
@@ -618,6 +712,26 @@ class SitesCard(Card):
         line(row + 2, "Mark a site down after", ("fail_after", 1, 10), "failed checks in a row")
         line(row + 3, "Warn", ("ssl_warn_days", 1, 90), "days before an SSL certificate expires")
         line(row + 4, "Warn", ("domain_warn_days", 1, 180), "days before a domain registration expires")
+        line(row + 5, "Check for new visitors every", ("visitors_every", 1, 60), "minutes")
+        section(f, row + 6, "New visitors")
+        line(
+            row + 7,
+            lambda fr: ttk.Checkbutton(
+                fr, text="Show +1 on the site when someone new visits, for up to", variable=v["new_visitor_badge"]
+            ),
+            ("badge_minutes", 5, 1440),
+            "min",
+        )
+        line(
+            row + 8,
+            lambda fr: ttk.Checkbutton(fr, text="Also send a Windows notification", variable=v["notify_visitors"]),
+        )
+        ttk.Label(
+            f,
+            text="The badge clears when you hover over the site. Visits can take a few minutes to show up.",
+            style="Hint.TLabel",
+        ).grid(row=row + 9, column=0, columnspan=3, sticky="w", pady=(2, 0))
+        row += 5
         section(f, row + 5, "Display")
         line(
             row + 6,
@@ -641,6 +755,10 @@ class SitesCard(Card):
             s["show_graph"] = bool(v["show_graph"].get())
             s["compact"] = bool(v["compact"].get())
             s["show_traffic"] = bool(v["show_traffic"].get())
+            s["visitors_every"] = int_of(v["visitors_every"], 1, 60, s.get("visitors_every", 2))
+            s["badge_minutes"] = int_of(v["badge_minutes"], 5, 1440, s.get("badge_minutes", 60))
+            s["new_visitor_badge"] = bool(v["new_visitor_badge"].get())
+            s["notify_visitors"] = bool(v["notify_visitors"].get())
             if before != (s["show_graph"], s["compact"]):
                 self.render()
             else:

@@ -2,6 +2,23 @@
 
 Changes to Perch, newest first. Versions follow [Semantic Versioning](https://semver.org/). Each section here is also used as the notes for that version's GitHub release.
 
+## [0.4.0] - 2026-11-10
+
+### New: see new visitors as they arrive
+
+- When someone new visits one of your sites, a green **+1** pops up on that site and the row glows for a moment. More visitors count it up (+2, +3…).
+- The card's header shows the total, like "5/5 up · +3 new", and so does the tray tooltip.
+- The badge clears when you hover over the site, or after an hour if you don't.
+- Perch checks today's visitor count every 2 minutes for this, and still refreshes the 7-day numbers every 15.
+- Optional Windows notification for new visitors, off by default.
+- All of it can be changed in the Sites card's settings, under **New visitors**.
+
+Visitor numbers come from Vercel or Cloudflare, which can take a few minutes to report a visit.
+
+### Install
+
+Download `Perch.exe` below and run it. If you already have Perch, click **Update**. Your cards and settings stay as they are.
+
 ## [0.3.0] - 2026-11-09
 
 ### New: Jobs card
